@@ -41,7 +41,6 @@
                 <div class="net-worth">
                     <h2>Total Balance</h2>
                     <p class="value" id="net-worth-value">€1,700,000</p>
-                    <p>Total Assets: <span id="total-assets">€2,000,000</span> | Total Liabilities: <span id="total-liabilities">€300,000</span></p>
                     <p class="pnl">Total P/L: <span id="growth-euro"></span> (<span id="growth-percent"></span>)</p>
                     <p class="update-date">Last Updated: <span id="current-date"></span> at <span id="update-time"></span></p>
                 </div>
@@ -301,8 +300,6 @@
 
                 document.getElementById('total-value').textContent = `€${formatNumber(total, 2)}`;
                 document.getElementById('net-worth-value').textContent = `€${formatNumber(netWorth, 0)}`;
-                document.getElementById('total-assets').textContent = `€${formatNumber(total, 0)}`;
-                document.getElementById('total-liabilities').textContent = `€${formatNumber(liabilities, 0)}`;
 
                 document.getElementById('current-date').textContent = formatDate();
                 document.getElementById('update-time').textContent = new Date().toLocaleTimeString('fr-FR');
