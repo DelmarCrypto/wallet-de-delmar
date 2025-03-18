@@ -41,7 +41,7 @@
                 <div class="net-worth">
                     <h2>Total Balance</h2>
                     <p class="value" id="net-worth-value">€1,700,000</p>
-                    <p class="pnl">Total P/L: <span id="growth-euro"></span> (<span id="growth-percent"></span>)</p>
+                    <p class="pnl"><span id="growth-percent"></span> <span id="growth-euro"></span></p>
                     <p class="update-date">Last Updated: <span id="current-date"></span> at <span id="update-time"></span></p>
                 </div>
 
@@ -104,24 +104,24 @@
                             <td id="btc-amount">15.68</td>
                             <td id="btc-price">76,564.06</td>
                             <td id="btc-value">€1,200,000.00</td>
-                            <td id="btc-pnl-24h">+0.00 € (0.00%)</td>
-                            <td id="btc-pnl-1h">+0.00 € (0.00%)</td>
+                            <td id="btc-pnl-24h"><span id="btc-pnl-24h-percent"></span> <span id="btc-pnl-24h-euro"></span></td>
+                            <td id="btc-pnl-1h"><span id="btc-pnl-1h-percent"></span> <span id="btc-pnl-1h-euro"></span></td>
                         </tr>
                         <tr>
                             <td><img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH"> Ethereum (ETH)</td>
                             <td id="eth-amount">343.23</td>
                             <td id="eth-price">1,748.06</td>
                             <td id="eth-value">€600,000.00</td>
-                            <td id="eth-pnl-24h">+0.00 € (0.00%)</td>
-                            <td id="eth-pnl-1h">+0.00 € (0.00%)</td>
+                            <td id="eth-pnl-24h"><span id="eth-pnl-24h-percent"></span> <span id="eth-pnl-24h-euro"></span></td>
+                            <td id="eth-pnl-1h"><span id="eth-pnl-1h-percent"></span> <span id="eth-pnl-1h-euro"></span></td>
                         </tr>
                         <tr>
                             <td><img src="https://cryptologos.cc/logos/xrp-xrp-logo.png" alt="XRP"> XRP</td>
                             <td id="xrp-amount">186,046.51</td>
                             <td id="xrp-price">2.15</td>
                             <td id="xrp-value">€400,000.00</td>
-                            <td id="xrp-pnl-24h">+0.00 € (0.00%)</td>
-                            <td id="xrp-pnl-1h">+0.00 € (0.00%)</td>
+                            <td id="xrp-pnl-24h"><span id="xrp-pnl-24h-percent"></span> <span id="xrp-pnl-24h-euro"></span></td>
+                            <td id="xrp-pnl-1h"><span id="xrp-pnl-1h-percent"></span> <span id="xrp-pnl-1h-euro"></span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -235,10 +235,11 @@
 
                 const growthEuro = total - initialInvestment;
                 const growthPercent = (growthEuro / initialInvestment) * 100;
-                document.getElementById('growth-euro').textContent = `${growthEuro >= 0 ? '+' : ''}${formatNumber(growthEuro, 2)} €`;
+                document.getElementById('growth-euro').textContent = `${growthEuro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(growthEuro), 2)}`;
                 document.getElementById('growth-euro').className = growthEuro >= 0 ? 'gain' : 'loss';
-                document.getElementById('growth-percent').textContent = `${growthPercent >= 0 ? '+' : ''}${formatNumber(growthPercent, 2)}%`;
+                document.getElementById('growth-percent').textContent = `${growthPercent >= 0 ? '(+' : '(-'}${formatNumber(growthPercent, 2)}%) `;
                 document.getElementById('growth-percent').className = growthEuro >= 0 ? 'gain' : 'loss';
+                document.getElementById('growth-percent').style.color = '#2ecc71'; // Vert pour les parenthèses
 
                 const now = new Date();
                 const currentDate = now.toISOString().split('T')[0];
@@ -277,26 +278,44 @@
                 document.getElementById('btc-price').textContent = formatNumber(btcPrice, 2);
                 document.getElementById('btc-amount').textContent = formatNumber(btcAmountFixed, 2);
                 document.getElementById('btc-value').textContent = `€${formatNumber(btcValue, 2)}`;
-                document.getElementById('btc-pnl-24h').innerHTML = `${dailyPnl.btc.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.btc.euro, 2)} € (${dailyPnl.btc.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.btc.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.btc.euro >= 0 ? 'up' : 'down'}">${dailyPnl.btc.euro >= 0 ? '▲' : '▼'}</span>`;
-                document.getElementById('btc-pnl-24h').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('btc-pnl-1h').innerHTML = `${hourlyPnl.btc.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.btc.euro, 2)} € (${hourlyPnl.btc.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.btc.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.btc.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.btc.euro >= 0 ? '▲' : '▼'}</span>`;
-                document.getElementById('btc-pnl-1h').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('btc-pnl-24h-percent').textContent = `${dailyPnl.btc.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.btc.percent, 2)}%) `;
+                document.getElementById('btc-pnl-24h-percent').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('btc-pnl-24h-percent').style.color = '#2ecc71';
+                document.getElementById('btc-pnl-24h-euro').textContent = `${dailyPnl.btc.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(dailyPnl.btc.euro), 2)}`;
+                document.getElementById('btc-pnl-24h-euro').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('btc-pnl-1h-percent').textContent = `${hourlyPnl.btc.percent >= 0 ? '(+' : '(-'}${formatNumber(hourlyPnl.btc.percent, 2)}%) `;
+                document.getElementById('btc-pnl-1h-percent').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('btc-pnl-1h-percent').style.color = '#2ecc71';
+                document.getElementById('btc-pnl-1h-euro').textContent = `${hourlyPnl.btc.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(hourlyPnl.btc.euro), 2)}`;
+                document.getElementById('btc-pnl-1h-euro').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
 
                 document.getElementById('eth-price').textContent = formatNumber(ethPrice, 2);
                 document.getElementById('eth-amount').textContent = formatNumber(ethAmountFixed, 2);
                 document.getElementById('eth-value').textContent = `€${formatNumber(ethValue, 2)}`;
-                document.getElementById('eth-pnl-24h').innerHTML = `${dailyPnl.eth.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.eth.euro, 2)} € (${dailyPnl.eth.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.eth.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.eth.euro >= 0 ? 'up' : 'down'}">${dailyPnl.eth.euro >= 0 ? '▲' : '▼'}</span>`;
-                document.getElementById('eth-pnl-24h').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('eth-pnl-1h').innerHTML = `${hourlyPnl.eth.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.eth.euro, 2)} € (${hourlyPnl.eth.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.eth.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.eth.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.eth.euro >= 0 ? '▲' : '▼'}</span>`;
-                document.getElementById('eth-pnl-1h').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('eth-pnl-24h-percent').textContent = `${dailyPnl.eth.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.eth.percent, 2)}%) `;
+                document.getElementById('eth-pnl-24h-percent').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('eth-pnl-24h-percent').style.color = '#2ecc71';
+                document.getElementById('eth-pnl-24h-euro').textContent = `${dailyPnl.eth.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(dailyPnl.eth.euro), 2)}`;
+                document.getElementById('eth-pnl-24h-euro').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('eth-pnl-1h-percent').textContent = `${hourlyPnl.eth.percent >= 0 ? '(+' : '(-'}${formatNumber(hourlyPnl.eth.percent, 2)}%) `;
+                document.getElementById('eth-pnl-1h-percent').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('eth-pnl-1h-percent').style.color = '#2ecc71';
+                document.getElementById('eth-pnl-1h-euro').textContent = `${hourlyPnl.eth.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(hourlyPnl.eth.euro), 2)}`;
+                document.getElementById('eth-pnl-1h-euro').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
 
                 document.getElementById('xrp-price').textContent = formatNumber(xrpPrice, 2);
                 document.getElementById('xrp-amount').textContent = formatNumber(xrpAmountFixed, 2);
                 document.getElementById('xrp-value').textContent = `€${formatNumber(xrpValue, 2)}`;
-                document.getElementById('xrp-pnl-24h').innerHTML = `${dailyPnl.xrp.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.xrp.euro, 2)} € (${dailyPnl.xrp.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.xrp.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.xrp.euro >= 0 ? 'up' : 'down'}">${dailyPnl.xrp.euro >= 0 ? '▲' : '▼'}</span>`;
-                document.getElementById('xrp-pnl-24h').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('xrp-pnl-1h').innerHTML = `${hourlyPnl.xrp.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.xrp.euro, 2)} € (${hourlyPnl.xrp.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.xrp.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.xrp.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.xrp.euro >= 0 ? '▲' : '▼'}</span>`;
-                document.getElementById('xrp-pnl-1h').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('xrp-pnl-24h-percent').textContent = `${dailyPnl.xrp.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.xrp.percent, 2)}%) `;
+                document.getElementById('xrp-pnl-24h-percent').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('xrp-pnl-24h-percent').style.color = '#2ecc71';
+                document.getElementById('xrp-pnl-24h-euro').textContent = `${dailyPnl.xrp.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(dailyPnl.xrp.euro), 2)}`;
+                document.getElementById('xrp-pnl-24h-euro').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('xrp-pnl-1h-percent').textContent = `${hourlyPnl.xrp.percent >= 0 ? '(+' : '(-'}${formatNumber(hourlyPnl.xrp.percent, 2)}%) `;
+                document.getElementById('xrp-pnl-1h-percent').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('xrp-pnl-1h-percent').style.color = '#2ecc71';
+                document.getElementById('xrp-pnl-1h-euro').textContent = `${hourlyPnl.xrp.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(hourlyPnl.xrp.euro), 2)}`;
+                document.getElementById('xrp-pnl-1h-euro').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
 
                 document.getElementById('total-value').textContent = `€${formatNumber(total, 2)}`;
                 document.getElementById('net-worth-value').textContent = `€${formatNumber(netWorth, 0)}`;
