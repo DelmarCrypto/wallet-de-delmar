@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Delmar</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a233a, #2c3e50);
+            color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5);
+            transition: background 0.3s;
+        }
+        .sidebar h2 {
+            color: #00d2d3;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        .wallet-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .wallet-actions button {
+            background: linear-gradient(135deg, #00d2d3, #00a1a7);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 210, 211, 0.3);
+            transition: transform 0.2s, background 0.3s;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .wallet-actions button:hover {
+            background: linear-gradient(135deg, #00a1a7, #008b8b);
+            transform: translateY(-2px);
+        }
+        .main-content {
+            margin-left: 270px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: calc(100% - 270px);
+        }
+        .portfolio-header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .portfolio-header h1 {
+            background: linear-gradient(to right, #00d2d3, #3498db);
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0 0 15px 0;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 2em;
+        }
+        .wallet-info {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            color: #00d2d3;
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+        .wallet-info span {
+            background-color: #34495e;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .wallet-info span:hover {
+            background-color: #465c71;
+            transform: scale(1.05);
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .action-buttons button {
+            background: linear-gradient(135deg, #00d2d3, #3498db);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+            font-weight: 500;
+        }
+        .action-buttons button:hover {
+            background: linear-gradient(135deg, #3498db, #00a1a7);
+            transform: translateY(-2px);
+        }
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .net-worth, .chart-container {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s;
+            min-height: 350px;
+            position: relative;
+            overflow: hidden;
+        }
+        .net-worth:hover, .chart-container:hover {
+            transform: translateY(-5px);
+        }
+        .net-worth h2, .chart-container h2 {
+            color: #00d2d3;
+            text-align: center;
+            margin-top: 0;
+            font-size: 1.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .net-worth .value {
+            font-size: 2.8em;
+            font-weight: 700;
+            color: #00d2d3;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .net-worth .update-date {
+            color: #bdc3c7;
+            font-size: 1em;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .pnl {
+            margin-top: 10px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        .pnl .gain { color: #2ecc71; }
+        .pnl .loss { color: #e74c3c; }
+        .chart-container canvas#assetChart {
+            max-width: 60%;
+            margin: 20px auto;
+        }
+        .chart-container canvas#performanceChart {
+            max-width: 100%;
+        }
+        .table-section {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            margin-top: 20px;
+        }
+        .table-section h2 {
+            color: #00d2d3;
+            text-align: center;
+            margin-top: 0;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #465c71;
+        }
+        th {
+            background-color: #34495e;
+            font-weight: 700;
+            color: #00d2d3;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #3a5063;
+        }
+        tbody tr:hover {
+            background-color: #465c71;
+            transition: background-color 0.3s;
+        }
+        td img {
+            vertical-align: middle;
+            margin-right: 8px;
+            width: 20px;
+        }
+        .total {
+            font-size: 1.5em;
+            margin-top: 20px;
+            color: #2ecc71;
+            text-align: center;
+            font-weight: 700;
+        }
+        .gain { color: #2ecc71; }
+        .loss { color: #e74c3c; }
+        .pnl-indicator.up { color: #2ecc71; margin-left: 5px; }
+        .pnl-indicator.down { color: #e74c3c; margin-left: 5px; }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                height: auto;
+                width: 100%;
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .light-mode {
+            background: linear-gradient(135deg, #ecf0f1, #dfe6e9);
+            color: #2c3e50;
+        }
+        .light-mode .sidebar, .light-mode .net-worth, .light-mode .table-section, .light-mode .chart-container, .light-mode .portfolio-header {
+            background: linear-gradient(135deg, #ffffff, #ecf0f1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .light-mode th {
+            background-color: #ecf0f1;
+        }
+        .light-mode tbody tr:nth-child(even) {
+            background-color: #f9fbfd;
+        }
+        .light-mode tbody tr:hover {
+            background-color: #dfe6e9;
+        }
+        .light-mode .wallet-info span {
+            background-color: #dfe6e9;
+        }
+        .light-mode .wallet-info span:hover {
+            background-color: #ccd6d9;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            padding: 25px;
+            border-radius: 15px;
+            width: 400px;
+            max-width: 90%;
+            color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #00d2d3;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+        .modal-content input, .modal-content button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+        }
+        .modal-content button {
+            background: linear-gradient(135deg, #00d2d3, #3498db);
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .modal-content button:hover {
+            background: linear-gradient(135deg, #3498db, #00a1a7);
+        }
+        .close {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #e74c3c;
+            transition: color 0.3s;
+        }
+        .close:hover {
+            color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2><i class="fas fa-wallet"></i> Menu</h2>
+            <div class="wallet-actions">
+                <button onclick="openModal('deposit-modal')"><i class="fas fa-download"></i> Deposit</button>
+                <button onclick="openModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Transfer</button>
+                <button><i class="fas fa-coins"></i> Earn</button>
+                <button><i class="fas fa-lock"></i> Staking ETH</button>
+                <button id="toggle-theme"><i class="fas fa-adjust"></i> Light Mode</button>
+                <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="portfolio-header">
+                <h1>Wallet Delmar</h1>
+                <div class="wallet-info">
+                    <span id="wallet-address" onclick="copyAddress()">0x0a79...760B <i class="fas fa-copy"></i></span>
+                    <span>Status: <span id="status-indicator" style="color: #2ecc71;">✔ Connected</span></span>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="openModal('deposit-modal')"><i class="fas fa-download"></i> Receive</button>
+                    <button onclick="openModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Send</button>
+                    <button onclick="updatePortfolio()"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+            </div>
+
+            <div class="overview-grid">
+                <div class="net-worth">
+                    <h2>Total Balance</h2>
+                    <p class="value" id="net-worth-value">€1,700,000</p>
+                    <p>Total Assets: <span id="total-assets">€2,000,000</span> | Total Liabilities: <span id="total-liabilities">€300,000</span></p>
+                    <p class="pnl">Total P/L: <span id="growth-euro"></span> (<span id="growth-percent"></span>)</p>
+                    <p class="update-date">Last Updated: <span id="current-date"></span> at <span id="update-time"></span></p>
+                </div>
+
+                <div class="chart-container">
+                    <h2>Asset Allocation</h2>
+                    <canvas id="assetChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-section">
+                <h2>Transaction History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Asset</th>
+                            <th>Amount</th>
+                            <th>Address</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>17/03/2025 14:30</td>
+                            <td>Send</td>
+                            <td>BTC</td>
+                            <td>0.5 BTC</td>
+                            <td>0x5678...efgh</td>
+                            <td><i class="fas fa-check" style="color: #2ecc71;"></i> Confirmed</td>
+                        </tr>
+                        <tr>
+                            <td>16/03/2025 09:15</td>
+                            <td>Receive</td>
+                            <td>ETH</td>
+                            <td>10 ETH</td>
+                            <td>0x9012...ijkl</td>
+                            <td><i class="fas fa-check" style="color: #2ecc71;"></i> Confirmed</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section">
+                <h2>Portfolio</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Quantity</th>
+                            <th>Price (€)</th>
+                            <th>Value</th>
+                            <th>P/L (24h)</th>
+                            <th>P/L (1h)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolio-table">
+                        <tr>
+                            <td><img src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" alt="BTC"> Bitcoin (BTC)</td>
+                            <td id="btc-amount">15.68</td>
+                            <td id="btc-price">76,564.06</td>
+                            <td id="btc-value">€1,200,000.00</td>
+                            <td id="btc-pnl-24h">+0.00 € (0.00%)</td>
+                            <td id="btc-pnl-1h">+0.00 € (0.00%)</td>
+                        </tr>
+                        <tr>
+                            <td><img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH"> Ethereum (ETH)</td>
+                            <td id="eth-amount">343.23</td>
+                            <td id="eth-price">1,748.06</td>
+                            <td id="eth-value">€600,000.00</td>
+                            <td id="eth-pnl-24h">+0.00 € (0.00%)</td>
+                            <td id="eth-pnl-1h">+0.00 € (0.00%)</td>
+                        </tr>
+                        <tr>
+                            <td><img src="https://cryptologos.cc/logos/xrp-xrp-logo.png" alt="XRP"> XRP</td>
+                            <td id="xrp-amount">186,046.51</td>
+                            <td id="xrp-price">2.15</td>
+                            <td id="xrp-value">€400,000.00</td>
+                            <td id="xrp-pnl-24h">+0.00 € (0.00%)</td>
+                            <td id="xrp-pnl-1h">+0.00 € (0.00%)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="chart-container">
+                <h2>Performance</h2>
+                <canvas id="performanceChart"></canvas>
+            </div>
+
+            <p class="total">Total Value: <span id="total-value">€2,000,000.00</span></p>
+        </div>
+    </div>
+
+    <div id="deposit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('deposit-modal')">×</span>
+            <h2>Receive Funds</h2>
+            <p>Receive Address:</p>
+            <input type="text" id="deposit-address" value="0x0a79...760B" readonly>
+            <button onclick="copyFullAddress()"><i class="fas fa-copy"></i> Copy Address</button>
+        </div>
+    </div>
+
+    <div id="transfer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('transfer-modal')">×</span>
+            <h2>Send Funds</h2>
+            <p>Destination Address:</p>
+            <input type="text" id="transfer-address" placeholder="Enter address">
+            <p>Amount:</p>
+            <input type="text" id="transfer-amount" placeholder="Enter amount">
+            <button onclick="simulateTransfer()"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
+    </div>
+
+    <script>
+        const fullWalletAddress = "0x0a79EDb600Baa0EBe3733007c5E9ee115619760B";
+
+        function formatNumber(number, decimals = 2) {
+            return number.toFixed(decimals)
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+                .replace('.', ',');
+        }
+
+        function formatDate() {
+            return new Date().toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        const btcAmountFixed = 15.68;
+        const ethAmountFixed = 343.23;
+        const xrpAmountFixed = 186046.51;
+        const liabilities = 0;
+        const initialInvestment = 30000;
+
+        const historicalPrices = {
+            btc: [17000, 2720, 6408, 25520, 39950, 15675, 38640, 64800, 0],
+            eth: [612, 72, 116, 651, 3145, 1140, 2300, 4500, 0],
+            xrp: [1.96, 0.26, 0.17, 0.57, 0.72, 0.33, 0.74, 2.25, 0]
+        };
+
+        let lastUpdateDate = localStorage.getItem('lastUpdateDate') || '';
+        let lastUpdateHour = localStorage.getItem('lastUpdateHour') || -1;
+        let previousPrices = JSON.parse(localStorage.getItem('previousPrices')) || { btc: 0, eth: 0, xrp: 0 };
+        let hourlyPrices = JSON.parse(localStorage.getItem('hourlyPrices')) || { btc: 0, eth: 0, xrp: 0 };
+        let dailyPnl = JSON.parse(localStorage.getItem('dailyPnl')) || {
+            btc: { euro: 0, percent: 0 },
+            eth: { euro: 0, percent: 0 },
+            xrp: { euro: 0, percent: 0 }
+        };
+        let hourlyPnl = JSON.parse(localStorage.getItem('hourlyPnl')) || {
+            btc: { euro: 0, percent: 0 },
+            eth: { euro: 0, percent: 0 },
+            xrp: { euro: 0, percent: 0 }
+        };
+
+        let performanceChartInstance = null;
+        let assetChartInstance = null;
+        let isUpdating = false;
+        let lastSuccessfulUpdate = null;
+
+        async function updatePortfolio() {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple&vs_currencies=eur', {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+                const data = await response.json();
+                const btcPrice = data.bitcoin?.eur || previousPrices.btc || 0;
+                const ethPrice = data.ethereum?.eur || previousPrices.eth || 0;
+                const xrpPrice = data.ripple?.eur || previousPrices.xrp || 0;
+
+                if (btcPrice === 0 && previousPrices.btc) throw new Error('Invalid BTC price data');
+                if (ethPrice === 0 && previousPrices.eth) throw new Error('Invalid ETH price data');
+                if (xrpPrice === 0 && previousPrices.xrp) throw new Error('Invalid XRP price data');
+
+                const btcValue = btcAmountFixed * btcPrice;
+                const ethValue = ethAmountFixed * ethPrice;
+                const xrpValue = xrpAmountFixed * xrpPrice;
+                const total = btcValue + ethValue + xrpValue;
+                const netWorth = total - liabilities;
+
+                const growthEuro = total - initialInvestment;
+                const growthPercent = (growthEuro / initialInvestment) * 100;
+                document.getElementById('growth-euro').textContent = `${growthEuro >= 0 ? '+' : ''}${formatNumber(growthEuro, 2)} €`;
+                document.getElementById('growth-euro').className = growthEuro >= 0 ? 'gain' : 'loss';
+                document.getElementById('growth-percent').textContent = `${growthPercent >= 0 ? '+' : ''}${formatNumber(growthPercent, 2)}%`;
+                document.getElementById('growth-percent').className = growthEuro >= 0 ? 'gain' : 'loss';
+
+                const now = new Date();
+                const currentDate = now.toISOString().split('T')[0];
+                const currentHour = now.getHours();
+
+                if (lastUpdateDate !== currentDate && previousPrices.btc !== 0) {
+                    dailyPnl.btc.euro = btcAmountFixed * (btcPrice - previousPrices.btc);
+                    dailyPnl.btc.percent = (dailyPnl.btc.euro / (btcAmountFixed * previousPrices.btc)) * 100;
+                    dailyPnl.eth.euro = ethAmountFixed * (ethPrice - previousPrices.eth);
+                    dailyPnl.eth.percent = (dailyPnl.eth.euro / (ethAmountFixed * previousPrices.eth)) * 100;
+                    dailyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - previousPrices.xrp);
+                    dailyPnl.xrp.percent = (dailyPnl.xrp.euro / (xrpAmountFixed * previousPrices.xrp)) * 100;
+
+                    previousPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
+                    localStorage.setItem('previousPrices', JSON.stringify(previousPrices));
+                    localStorage.setItem('dailyPnl', JSON.stringify(dailyPnl));
+                    localStorage.setItem('lastUpdateDate', currentDate);
+                }
+
+                if (currentHour !== parseInt(lastUpdateHour) || lastUpdateHour === -1) {
+                    if (hourlyPrices.btc !== 0) {
+                        hourlyPnl.btc.euro = btcAmountFixed * (btcPrice - hourlyPrices.btc);
+                        hourlyPnl.btc.percent = (hourlyPnl.btc.euro / (btcAmountFixed * hourlyPrices.btc)) * 100;
+                        hourlyPnl.eth.euro = ethAmountFixed * (ethPrice - hourlyPrices.eth);
+                        hourlyPnl.eth.percent = (hourlyPnl.eth.euro / (ethAmountFixed * hourlyPrices.eth)) * 100;
+                        hourlyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - hourlyPrices.xrp);
+                        hourlyPnl.xrp.percent = (hourlyPnl.xrp.euro / (xrpAmountFixed * hourlyPrices.xrp)) * 100;
+                    }
+
+                    hourlyPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
+                    localStorage.setItem('hourlyPrices', JSON.stringify(hourlyPrices));
+                    localStorage.setItem('hourlyPnl', JSON.stringify(hourlyPnl));
+                    localStorage.setItem('lastUpdateHour', currentHour.toString());
+                }
+
+                document.getElementById('btc-price').textContent = formatNumber(btcPrice, 2);
+                document.getElementById('btc-amount').textContent = formatNumber(btcAmountFixed, 2);
+                document.getElementById('btc-value').textContent = `€${formatNumber(btcValue, 2)}`;
+                document.getElementById('btc-pnl-24h').innerHTML = `${dailyPnl.btc.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.btc.euro, 2)} € (${dailyPnl.btc.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.btc.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.btc.euro >= 0 ? 'up' : 'down'}">${dailyPnl.btc.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('btc-pnl-24h').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('btc-pnl-1h').innerHTML = `${hourlyPnl.btc.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.btc.euro, 2)} € (${hourlyPnl.btc.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.btc.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.btc.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.btc.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('btc-pnl-1h').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+
+                document.getElementById('eth-price').textContent = formatNumber(ethPrice, 2);
+                document.getElementById('eth-amount').textContent = formatNumber(ethAmountFixed, 2);
+                document.getElementById('eth-value').textContent = `€${formatNumber(ethValue, 2)}`;
+                document.getElementById('eth-pnl-24h').innerHTML = `${dailyPnl.eth.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.eth.euro, 2)} € (${dailyPnl.eth.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.eth.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.eth.euro >= 0 ? 'up' : 'down'}">${dailyPnl.eth.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('eth-pnl-24h').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('eth-pnl-1h').innerHTML = `${hourlyPnl.eth.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.eth.euro, 2)} € (${hourlyPnl.eth.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.eth.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.eth.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.eth.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('eth-pnl-1h').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+
+                document.getElementById('xrp-price').textContent = formatNumber(xrpPrice, 2);
+                document.getElementById('xrp-amount').textContent = formatNumber(xrpAmountFixed, 2);
+                document.getElementById('xrp-value').textContent = `€${formatNumber(xrpValue, 2)}`;
+                document.getElementById('xrp-pnl-24h').innerHTML = `${dailyPnl.xrp.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.xrp.euro, 2)} € (${dailyPnl.xrp.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.xrp.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.xrp.euro >= 0 ? 'up' : 'down'}">${dailyPnl.xrp.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('xrp-pnl-24h').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('xrp-pnl-1h').innerHTML = `${hourlyPnl.xrp.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.xrp.euro, 2)} € (${hourlyPnl.xrp.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.xrp.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.xrp.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.xrp.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('xrp-pnl-1h').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+
+                document.getElementById('total-value').textContent = `€${formatNumber(total, 2)}`;
+                document.getElementById('net-worth-value').textContent = `€${formatNumber(netWorth, 0)}`;
+                document.getElementById('total-assets').textContent = `€${formatNumber(total, 0)}`;
+                document.getElementById('total-liabilities').textContent = `€${formatNumber(liabilities, 0)}`;
+
+                document.getElementById('current-date').textContent = formatDate();
+                document.getElementById('update-time').textContent = new Date().toLocaleTimeString('fr-FR');
+
+                if (assetChartInstance) assetChartInstance.destroy();
+                assetChartInstance = new Chart(document.getElementById('assetChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Bitcoin (BTC)', 'Ethereum (ETH)', 'XRP'],
+                        datasets: [{
+                            data: [btcValue, ethValue, xrpValue],
+                            backgroundColor: ['#3498db', #2ecc71', '#e74c3c'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#ffffff', font: { size: 14 } } },
+                            tooltip: { backgroundColor: '#34495e', callbacks: { label: (context) => `${context.label}: €${formatNumber(context.raw, 2)}` } }
+                        }
+                    }
+                });
+
+                const performanceData = historicalPrices.btc.map((price, index) => {
+                    const btcHist = btcAmountFixed * (index === 8 ? btcPrice : historicalPrices.btc[index]);
+                    const ethHist = ethAmountFixed * (index === 8 ? ethPrice : historicalPrices.eth[index]);
+                    const xrpHist = xrpAmountFixed * (index === 8 ? xrpPrice : historicalPrices.xrp[index]);
+                    return btcHist + ethHist + xrpHist;
+                });
+
+                if (performanceChartInstance) performanceChartInstance.destroy();
+                performanceChartInstance = new Chart(document.getElementById('performanceChart'), {
+                    type: 'line',
+                    data: {
+                        labels: ['2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+                        datasets: [{
+                            label: 'Total Value (€)',
+                            data: performanceData,
+                            borderColor: '#00d2d3',
+                            backgroundColor: 'rgba(0, 210, 211, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+                            x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#ffffff' } },
+                            tooltip: { callbacks: { label: (context) => `Value: €${formatNumber(context.raw, 2)}` } }
+                        }
+                    }
+                });
+
+                lastSuccessfulUpdate = now;
+
+            } catch (error) {
+                console.error('Update Error:', error);
+                document.getElementById('update-time').textContent = `Error: ${error.message}`;
+            } finally {
+                isUpdating = false;
+            }
+        }
+
+        setInterval(() => {
+            document.getElementById('status-indicator').style.color = isUpdating ? '#e74c3c' : '#2ecc71';
+            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : '✔ Connected';
+        }, 1000);
+
+        setInterval(updatePortfolio, 300000);
+        updatePortfolio();
+
+        document.getElementById('toggle-theme').addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            document.getElementById('toggle-theme').textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
+            document.getElementById('toggle-theme').innerHTML = `<i class="fas fa-adjust"></i> ${document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode'}`;
+        });
+
+        function copyAddress() {
+            navigator.clipboard.writeText(fullWalletAddress).then(() => {
+                alert('Address copied: ' + fullWalletAddress);
+            });
+        }
+
+        function copyFullAddress() {
+            navigator.clipboard.writeText(fullWalletAddress).then(() => {
+                alert('Address copied: ' + fullWalletAddress);
+            });
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function simulateTransfer() {
+            const address = document.getElementById('transfer-address').value;
+            const amount = document.getElementById('transfer-amount').value;
+            if (address && amount) {
+                alert(`Simulated Transfer: ${amount} sent to ${address}`);
+                document.getElementById('transfer-address').value = '';
+                document.getElementById('transfer-amount').value = '';
+                closeModal('transfer-modal');
+            } else {
+                alert('Please fill all fields.');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to log out?')) {
+                alert('Logout successful!');
+            }
+        }
+    </script>
+</body>
+</html>
