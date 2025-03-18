@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="styles.css"> <!-- Lien vers le fichier styles.css -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -241,4 +241,189 @@
                 document.getElementById('growth-percent').textContent = `${growthPercent >= 0 ? '+' : ''}${formatNumber(growthPercent, 2)}%`;
                 document.getElementById('growth-percent').className = growthEuro >= 0 ? 'gain' : 'loss';
 
-                const now
+                const now = new Date();
+                const currentDate = now.toISOString().split('T')[0];
+                const currentHour = now.getHours();
+
+                if (lastUpdateDate !== currentDate && previousPrices.btc !== 0) {
+                    dailyPnl.btc.euro = btcAmountFixed * (btcPrice - previousPrices.btc);
+                    dailyPnl.btc.percent = (dailyPnl.btc.euro / (btcAmountFixed * previousPrices.btc)) * 100;
+                    dailyPnl.eth.euro = ethAmountFixed * (ethPrice - previousPrices.eth);
+                    dailyPnl.eth.percent = (dailyPnl.eth.euro / (ethAmountFixed * previousPrices.eth)) * 100;
+                    dailyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - previousPrices.xrp);
+                    dailyPnl.xrp.percent = (dailyPnl.xrp.euro / (xrpAmountFixed * previousPrices.xrp)) * 100;
+
+                    previousPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
+                    localStorage.setItem('previousPrices', JSON.stringify(previousPrices));
+                    localStorage.setItem('dailyPnl', JSON.stringify(dailyPnl));
+                    localStorage.setItem('lastUpdateDate', currentDate);
+                }
+
+                if (currentHour !== parseInt(lastUpdateHour) || lastUpdateHour === -1) {
+                    if (hourlyPrices.btc !== 0) {
+                        hourlyPnl.btc.euro = btcAmountFixed * (btcPrice - hourlyPrices.btc);
+                        hourlyPnl.btc.percent = (hourlyPnl.btc.euro / (btcAmountFixed * hourlyPrices.btc)) * 100;
+                        hourlyPnl.eth.euro = ethAmountFixed * (ethPrice - hourlyPrices.eth);
+                        hourlyPnl.eth.percent = (hourlyPnl.eth.euro / (ethAmountFixed * hourlyPrices.eth)) * 100;
+                        hourlyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - hourlyPrices.xrp);
+                        hourlyPnl.xrp.percent = (hourlyPnl.xrp.euro / (xrpAmountFixed * hourlyPrices.xrp)) * 100;
+                    }
+
+                    hourlyPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
+                    localStorage.setItem('hourlyPrices', JSON.stringify(hourlyPrices));
+                    localStorage.setItem('hourlyPnl', JSON.stringify(hourlyPnl));
+                    localStorage.setItem('lastUpdateHour', currentHour.toString());
+                }
+
+                document.getElementById('btc-price').textContent = formatNumber(btcPrice, 2);
+                document.getElementById('btc-amount').textContent = formatNumber(btcAmountFixed, 2);
+                document.getElementById('btc-value').textContent = `€${formatNumber(btcValue, 2)}`;
+                document.getElementById('btc-pnl-24h').innerHTML = `${dailyPnl.btc.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.btc.euro, 2)} € (${dailyPnl.btc.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.btc.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.btc.euro >= 0 ? 'up' : 'down'}">${dailyPnl.btc.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('btc-pnl-24h').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('btc-pnl-1h').innerHTML = `${hourlyPnl.btc.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.btc.euro, 2)} € (${hourlyPnl.btc.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.btc.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.btc.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.btc.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('btc-pnl-1h').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
+
+                document.getElementById('eth-price').textContent = formatNumber(ethPrice, 2);
+                document.getElementById('eth-amount').textContent = formatNumber(ethAmountFixed, 2);
+                document.getElementById('eth-value').textContent = `€${formatNumber(ethValue, 2)}`;
+                document.getElementById('eth-pnl-24h').innerHTML = `${dailyPnl.eth.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.eth.euro, 2)} € (${dailyPnl.eth.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.eth.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.eth.euro >= 0 ? 'up' : 'down'}">${dailyPnl.eth.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('eth-pnl-24h').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('eth-pnl-1h').innerHTML = `${hourlyPnl.eth.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.eth.euro, 2)} € (${hourlyPnl.eth.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.eth.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.eth.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.eth.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('eth-pnl-1h').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
+
+                document.getElementById('xrp-price').textContent = formatNumber(xrpPrice, 2);
+                document.getElementById('xrp-amount').textContent = formatNumber(xrpAmountFixed, 2);
+                document.getElementById('xrp-value').textContent = `€${formatNumber(xrpValue, 2)}`;
+                document.getElementById('xrp-pnl-24h').innerHTML = `${dailyPnl.xrp.euro >= 0 ? '+' : ''}${formatNumber(dailyPnl.xrp.euro, 2)} € (${dailyPnl.xrp.percent >= 0 ? '+' : ''}${formatNumber(dailyPnl.xrp.percent, 2)}%) <span class="pnl-indicator ${dailyPnl.xrp.euro >= 0 ? 'up' : 'down'}">${dailyPnl.xrp.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('xrp-pnl-24h').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+                document.getElementById('xrp-pnl-1h').innerHTML = `${hourlyPnl.xrp.euro >= 0 ? '+' : ''}${formatNumber(hourlyPnl.xrp.euro, 2)} € (${hourlyPnl.xrp.percent >= 0 ? '+' : ''}${formatNumber(hourlyPnl.xrp.percent, 2)}%) <span class="pnl-indicator ${hourlyPnl.xrp.euro >= 0 ? 'up' : 'down'}">${hourlyPnl.xrp.euro >= 0 ? '▲' : '▼'}</span>`;
+                document.getElementById('xrp-pnl-1h').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
+
+                document.getElementById('total-value').textContent = `€${formatNumber(total, 2)}`;
+                document.getElementById('net-worth-value').textContent = `€${formatNumber(netWorth, 0)}`;
+                document.getElementById('total-assets').textContent = `€${formatNumber(total, 0)}`;
+                document.getElementById('total-liabilities').textContent = `€${formatNumber(liabilities, 0)}`;
+
+                document.getElementById('current-date').textContent = formatDate();
+                document.getElementById('update-time').textContent = new Date().toLocaleTimeString('fr-FR');
+
+                if (assetChartInstance) assetChartInstance.destroy();
+                assetChartInstance = new Chart(document.getElementById('assetChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Bitcoin (BTC)', 'Ethereum (ETH)', 'XRP'],
+                        datasets: [{
+                            data: [btcValue, ethValue, xrpValue],
+                            backgroundColor: ['#3498db', '#2ecc71', '#e74c3c'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#ffffff', font: { size: 14 } } },
+                            tooltip: { backgroundColor: '#34495e', callbacks: { label: (context) => `${context.label}: €${formatNumber(context.raw, 2)}` } }
+                        }
+                    }
+                });
+
+                const performanceData = historicalPrices.btc.map((price, index) => {
+                    const btcHist = btcAmountFixed * (index === 8 ? btcPrice : historicalPrices.btc[index]);
+                    const ethHist = ethAmountFixed * (index === 8 ? ethPrice : historicalPrices.eth[index]);
+                    const xrpHist = xrpAmountFixed * (index === 8 ? xrpPrice : historicalPrices.xrp[index]);
+                    return btcHist + ethHist + xrpHist;
+                });
+
+                if (performanceChartInstance) performanceChartInstance.destroy();
+                performanceChartInstance = new Chart(document.getElementById('performanceChart'), {
+                    type: 'line',
+                    data: {
+                        labels: ['2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+                        datasets: [{
+                            label: 'Total Value (€)',
+                            data: performanceData,
+                            borderColor: '#00d2d3',
+                            backgroundColor: 'rgba(0, 210, 211, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+                            x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#ffffff' } },
+                            tooltip: { callbacks: { label: (context) => `Value: €${formatNumber(context.raw, 2)}` } }
+                        }
+                    }
+                });
+
+                lastSuccessfulUpdate = now;
+
+            } catch (error) {
+                console.error('Update Error:', error);
+                document.getElementById('update-time').textContent = `Error: ${error.message}`;
+            } finally {
+                isUpdating = false;
+            }
+        }
+
+        setInterval(() => {
+            document.getElementById('status-indicator').style.color = isUpdating ? '#e74c3c' : '#2ecc71';
+            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : '✔ Connected';
+        }, 1000);
+
+        setInterval(updatePortfolio, 300000);
+        updatePortfolio();
+
+        document.getElementById('toggle-theme').addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            document.getElementById('toggle-theme').textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
+            document.getElementById('toggle-theme').innerHTML = `<i class="fas fa-adjust"></i> ${document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode'}`;
+        });
+
+        function copyAddress() {
+            navigator.clipboard.writeText(fullWalletAddress).then(() => {
+                alert('Address copied: ' + fullWalletAddress);
+            });
+        }
+
+        function copyFullAddress() {
+            navigator.clipboard.writeText(fullWalletAddress).then(() => {
+                alert('Address copied: ' + fullWalletAddress);
+            });
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function simulateTransfer() {
+            const address = document.getElementById('transfer-address').value;
+            const amount = document.getElementById('transfer-amount').value;
+            if (address && amount) {
+                alert(`Simulated Transfer: ${amount} sent to ${address}`);
+                document.getElementById('transfer-address').value = '';
+                document.getElementById('transfer-amount').value = '';
+                closeModal('transfer-modal');
+            } else {
+                alert('Please fill all fields.');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to log out?')) {
+                alert('Logout successful!');
+            }
+        }
+    </script>
+</body>
+</html>
