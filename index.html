@@ -300,6 +300,10 @@
             color: #333333;
         }
 
+        #deposit-modal.toggle-active, #earn-modal.toggle-active {
+            display: flex;
+        }
+
         @media (min-width: 768px) {
             .container {
                 flex-direction: row;
@@ -361,9 +365,9 @@
         <div class="sidebar">
             <h2><i class="fas fa-wallet"></i> Menu</h2>
             <div class="wallet-actions">
-                <button onclick="openModal('deposit-modal')"><i class="fas fa-download"></i> Deposit</button>
-                <button onclick="openModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Transfer</button>
-                <button><i class="fas fa-coins"></i> Earn</button>
+                <button onclick="toggleModal('deposit-modal')"><i class="fas fa-download"></i> Deposit</button>
+                <button onclick="toggleModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Transfer</button>
+                <button onclick="toggleModal('earn-modal')"><i class="fas fa-coins"></i> Earn</button>
                 <button><i class="fas fa-lock"></i> Staking ETH</button>
                 <button id="toggle-theme"><i class="fas fa-adjust"></i> Light Mode</button>
                 <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -378,8 +382,8 @@
                     <span>Status: <span id="status-indicator" style="color: #2ecc71;">✔ Connected</span></span>
                 </div>
                 <div class="action-buttons">
-                    <button onclick="openModal('deposit-modal')"><i class="fas fa-download"></i> Receive</button>
-                    <button onclick="openModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Send</button>
+                    <button onclick="toggleModal('deposit-modal')"><i class="fas fa-download"></i> Receive</button>
+                    <button onclick="toggleModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Send</button>
                     <button onclick="updatePortfolio()"><i class="fas fa-sync"></i> Refresh</button>
                 </div>
             </div>
@@ -387,7 +391,7 @@
             <div class="overview-grid">
                 <div class="net-worth">
                     <h2>Total Balance</h2>
-                    <p class="value" id="net-worth-value">€1,700,000</p>
+                    <p class="value" id="net-worth-value">€3,545,097</p>
                     <p class="pnl"><span id="growth-percent"></span> <span id="growth-euro"></span></p>
                     <p class="update-date">Last Updated: <span id="current-date"></span> at <span id="update-time"></span></p>
                 </div>
@@ -466,7 +470,7 @@
                             <td><img src="xrp.png" alt="XRP"> XRP</td>
                             <td id="xrp-amount">186,046.51</td>
                             <td id="xrp-price">2.15</td>
-                            <td id="xrp-value">€400,000.00</td>
+                            <td id="xrp-value">€1,745,097.00</td>
                             <td id="xrp-pnl-24h"><span id="xrp-pnl-24h-percent"></span> <span id="xrp-pnl-24h-euro"></span></td>
                             <td id="xrp-pnl-1h"><span id="xrp-pnl-1h-percent"></span> <span id="xrp-pnl-1h-euro"></span></td>
                         </tr>
@@ -479,13 +483,13 @@
                 <canvas id="performanceChart"></canvas>
             </div>
 
-            <p class="total">Total Value: <span id="total-value">€2,000,000.00</span></p>
+            <p class="total">Total Value: <span id="total-value">€3,545,097.00</span></p>
         </div>
     </div>
 
     <div id="deposit-modal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('deposit-modal')">×</span>
+            <span class="close" onclick="toggleModal('deposit-modal')">×</span>
             <h2>Receive Funds</h2>
             <p>Receive Address:</p>
             <input type="text" id="deposit-address" value="0x0a79...760B" readonly>
@@ -495,13 +499,22 @@
 
     <div id="transfer-modal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('transfer-modal')">×</span>
+            <span class="close" onclick="toggleModal('transfer-modal')">×</span>
             <h2>Send Funds</h2>
             <p>Destination Address:</p>
             <input type="text" id="transfer-address" placeholder="Enter address">
             <p>Amount:</p>
             <input type="text" id="transfer-amount" placeholder="Enter amount">
             <button onclick="simulateTransfer()"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
+    </div>
+
+    <div id="earn-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleModal('earn-modal')">×</span>
+            <h2>Earn</h2>
+            <p>Explore earning opportunities here.</p>
+            <button onclick="alert('Earning feature coming soon!')">Learn More</button>
         </div>
     </div>
 
@@ -761,12 +774,26 @@
             });
         }
 
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal.style.display === 'flex') {
+                modal.style.display = 'none';
+                modal.classList.remove('toggle-active');
+            } else {
+                // Close other modals before opening the new one
+                document.querySelectorAll('.modal').forEach(m => {
+                    m.style.display = 'none';
+                    m.classList.remove('toggle-active');
+                });
+                modal.style.display = 'flex';
+                modal.classList.add('toggle-active');
+            }
         }
 
         function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'none';
+            modal.classList.remove('toggle-active');
         }
 
         function simulateTransfer() {
