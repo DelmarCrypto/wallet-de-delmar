@@ -2,12 +2,359 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Wallet Delmar</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        body.light-mode {
+            background-color: #f5f5f5;
+            color: #333333;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .sidebar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #2c2c2c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+            border-top: 1px solid #444;
+        }
+
+        .light-mode .sidebar {
+            background-color: #ffffff;
+            border-top: 1px solid #ddd;
+        }
+
+        .sidebar h2 {
+            display: none;
+        }
+
+        .wallet-actions button {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .light-mode .wallet-actions button {
+            color: #333333;
+        }
+
+        .wallet-actions button i {
+            font-size: 20px;
+        }
+
+        .main-content {
+            padding: 15px;
+            flex: 1;
+        }
+
+        .portfolio-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .wallet-info {
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .wallet-info span {
+            display: block;
+            margin: 5px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .action-buttons button {
+            background-color: #3498db;
+            color: #ffffff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .light-mode .action-buttons button {
+            background-color: #2980b9;
+        }
+
+        .overview-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .net-worth, .chart-container {
+            background-color: #2c2c2c;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .light-mode .net-worth, .light-mode .chart-container {
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .net-worth h2, .chart-container h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .net-worth .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .pnl, .update-date {
+            font-size: 14px;
+            color: #cccccc;
+        }
+
+        .gain {
+            color: #2ecc71;
+        }
+
+        .loss {
+            color: #e74c3c;
+        }
+
+        .chart-container canvas {
+            max-height: 200px;
+        }
+
+        .table-section {
+            margin-bottom: 20px;
+        }
+
+        .table-section h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+
+        .light-mode th, .light-mode td {
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #34495e;
+        }
+
+        .light-mode th {
+            background-color: #ecf0f1;
+        }
+
+        td img {
+            width: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        .total {
+            font-size: 18px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background-color: #2c2c2c;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .light-mode .modal-content {
+            background-color: #ffffff;
+        }
+
+        .modal-content h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #34495e;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        .light-mode .modal-content input {
+            border: 1px solid #ddd;
+            background-color: #ecf0f1;
+            color: #333333;
+        }
+
+        .modal-content button {
+            background-color: #3498db;
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .light-mode .modal-content button {
+            background-color: #2980b9;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #ffffff;
+        }
+
+        .light-mode .close {
+            color: #333333;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 200px;
+                height: 100%;
+                flex-direction: column;
+                justify-content: flex-start;
+                padding: 20px;
+            }
+
+            .sidebar h2 {
+                display: block;
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .wallet-actions button {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 15px;
+                font-size: 16px;
+            }
+
+            .main-content {
+                margin-left: 220px;
+                padding: 20px;
+            }
+
+            .portfolio-header h1 {
+                font-size: 28px;
+            }
+
+            .net-worth h2, .chart-container h2, .table-section h2 {
+                font-size: 20px;
+            }
+
+            .net-worth .value {
+                font-size: 28px;
+            }
+
+            .chart-container canvas {
+                max-height: 300px;
+            }
+
+            table {
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -239,7 +586,7 @@
                 document.getElementById('growth-euro').className = growthEuro >= 0 ? 'gain' : 'loss';
                 document.getElementById('growth-percent').textContent = `${growthPercent >= 0 ? '(+' : '(-'}${formatNumber(growthPercent, 2)}%) `;
                 document.getElementById('growth-percent').className = growthEuro >= 0 ? 'gain' : 'loss';
-                document.getElementById('growth-percent').style.color = '#2ecc71'; // Vert pour les parenthèses
+                document.getElementById('growth-percent').style.color = '#2ecc71';
 
                 const now = new Date();
                 const currentDate = now.toISOString().split('T')[0];
@@ -338,7 +685,7 @@
                         responsive: true,
                         maintainAspectRatio: true,
                         plugins: {
-                            legend: { position: 'bottom', labels: { color: '#ffffff', font: { size: 14 } } },
+                            legend: { position: 'bottom', labels: { color: '#ffffff', font: { size: 12 } } },
                             tooltip: { backgroundColor: '#34495e', callbacks: { label: (context) => `${context.label}: €${formatNumber(context.raw, 2)}` } }
                         }
                     }
@@ -440,6 +787,16 @@
                 alert('Logout successful!');
             }
         }
+
+        // Add touch event listeners for better mobile interaction
+        document.querySelectorAll('.wallet-actions button, .action-buttons button').forEach(button => {
+            button.addEventListener('touchstart', (e) => {
+                e.target.style.opacity = '0.7';
+            });
+            button.addEventListener('touchend', (e) => {
+                e.target.style.opacity = '1';
+            });
+        });
     </script>
 </body>
 </html>
