@@ -40,23 +40,37 @@
 
         .sidebar {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
             background-color: #2c2c2c;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
+            padding: 20px;
+            transition: left 0.3s ease, width 0.3s ease;
             z-index: 1000;
-            border-top: 1px solid #444;
+            overflow-y: auto;
         }
 
         .light-mode .sidebar {
             background-color: #ffffff;
-            border-top: 1px solid #ddd;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar.minimized {
+            width: 60px;
+            padding: 10px;
         }
 
         .sidebar h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .sidebar.minimized h2 {
             display: none;
         }
 
@@ -64,13 +78,15 @@
             background: none;
             border: none;
             color: #ffffff;
-            font-size: 14px;
-            padding: 10px;
+            font-size: 16px;
+            padding: 15px;
             cursor: pointer;
+            width: 100%;
+            text-align: left;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 10px;
+            transition: padding 0.3s ease, font-size 0.3s ease;
         }
 
         .light-mode .wallet-actions button {
@@ -78,12 +94,50 @@
         }
 
         .wallet-actions button i {
-            font-size: 20px;
+            font-size: 18px;
+        }
+
+        .sidebar.minimized .wallet-actions button {
+            padding: 10px;
+            font-size: 0;
+            justify-content: center;
+        }
+
+        .sidebar.minimized .wallet-actions button span {
+            display: none;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: #3498db;
+            border: none;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+            font-size: 18px;
+        }
+
+        .light-mode .menu-toggle {
+            background-color: #2980b9;
         }
 
         .main-content {
             padding: 15px;
             flex: 1;
+            transition: margin-left 0.3s ease;
+            margin-left: 0;
+        }
+
+        .main-content.shifted {
+            margin-left: 250px;
+        }
+
+        .main-content.shifted.minimized {
+            margin-left: 60px;
         }
 
         .portfolio-header {
@@ -300,81 +354,42 @@
             color: #333333;
         }
 
-        #deposit-modal.toggle-active, #earn-modal.toggle-active {
+        #deposit-modal.toggle-active, #earn-modal.toggle-active, #transfer-modal.toggle-active {
             display: flex;
         }
 
         @media (min-width: 768px) {
-            .container {
-                flex-direction: row;
-            }
-
             .sidebar {
-                position: fixed;
-                top: 0;
                 left: 0;
                 width: 200px;
-                height: 100%;
-                flex-direction: column;
-                justify-content: flex-start;
-                padding: 20px;
-            }
-
-            .sidebar h2 {
-                display: block;
-                font-size: 20px;
-                margin-bottom: 20px;
-            }
-
-            .wallet-actions button {
-                width: 100%;
-                justify-content: flex-start;
-                padding: 15px;
-                font-size: 16px;
             }
 
             .main-content {
-                margin-left: 220px;
-                padding: 20px;
+                margin-left: 200px;
             }
 
-            .portfolio-header h1 {
-                font-size: 28px;
-            }
-
-            .net-worth h2, .chart-container h2, .table-section h2 {
-                font-size: 20px;
-            }
-
-            .net-worth .value {
-                font-size: 28px;
-            }
-
-            .chart-container canvas {
-                max-height: 300px;
-            }
-
-            table {
-                font-size: 16px;
+            .menu-toggle {
+                display: none;
             }
         }
     </style>
 </head>
 <body>
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
     <div class="container">
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <h2><i class="fas fa-wallet"></i> Menu</h2>
             <div class="wallet-actions">
-                <button onclick="toggleModal('deposit-modal')"><i class="fas fa-download"></i> Deposit</button>
-                <button onclick="toggleModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Transfer</button>
-                <button onclick="toggleModal('earn-modal')"><i class="fas fa-coins"></i> Earn</button>
-                <button><i class="fas fa-lock"></i> Staking ETH</button>
-                <button id="toggle-theme"><i class="fas fa-adjust"></i> Light Mode</button>
-                <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <button onclick="toggleModal('deposit-modal')"><i class="fas fa-download"></i> <span>Deposit</span></button>
+                <button onclick="toggleModal('transfer-modal')"><i class="fas fa-paper-plane"></i> <span>Transfer</span></button>
+                <button onclick="toggleModal('earn-modal')"><i class="fas fa-coins"></i> <span>Earn</span></button>
+                <button><i class="fas fa-lock"></i> <span>Staking ETH</span></button>
+                <button id="toggle-theme"><i class="fas fa-adjust"></i> <span>Light Mode</span></button>
+                <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
             </div>
         </div>
 
-        <div class="main-content">
+        <div class="main-content" id="main-content">
             <div class="portfolio-header">
                 <h1>Wallet Delmar</h1>
                 <div class="wallet-info">
@@ -759,7 +774,7 @@
         document.getElementById('toggle-theme').addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
             document.getElementById('toggle-theme').textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
-            document.getElementById('toggle-theme').innerHTML = `<i class="fas fa-adjust"></i> ${document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode'}`;
+            document.getElementById('toggle-theme').innerHTML = `<i class="fas fa-adjust"></i> <span>${document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode'}</span>`;
         });
 
         function copyAddress() {
@@ -780,7 +795,6 @@
                 modal.style.display = 'none';
                 modal.classList.remove('toggle-active');
             } else {
-                // Close other modals before opening the new one
                 document.querySelectorAll('.modal').forEach(m => {
                     m.style.display = 'none';
                     m.classList.remove('toggle-active');
@@ -815,7 +829,30 @@
             }
         }
 
-        // Add touch event listeners for better mobile interaction
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const isActive = sidebar.classList.contains('active');
+            const isMinimized = sidebar.classList.contains('minimized');
+
+            if (!isActive) {
+                sidebar.classList.add('active');
+                mainContent.classList.add('shifted');
+                if (isMinimized) {
+                    sidebar.classList.remove('minimized');
+                    mainContent.classList.remove('minimized');
+                }
+            } else if (!isMinimized) {
+                sidebar.classList.add('minimized');
+                mainContent.classList.add('minimized');
+            } else {
+                sidebar.classList.remove('active');
+                sidebar.classList.remove('minimized');
+                mainContent.classList.remove('shifted');
+                mainContent.classList.remove('minimized');
+            }
+        }
+
         document.querySelectorAll('.wallet-actions button, .action-buttons button').forEach(button => {
             button.addEventListener('touchstart', (e) => {
                 e.target.style.opacity = '0.7';
