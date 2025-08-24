@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Ledger Wallet</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script> <!-- Added Ethers.js for blockchain interactions -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -526,14 +527,13 @@
             <h2>Send Funds</h2>
             <p>Asset:</p>
             <select id="transfer-asset">
-                <option value="BTC">Bitcoin (BTC)</option>
                 <option value="ETH">Ethereum (ETH)</option>
-                <option value="XRP">XRP</option>
+                <!-- BTC and XRP require cross-chain or ERC20 wrappers -->
             </select>
             <p>Destination Address:</p>
             <input type="text" id="transfer-address" placeholder="Enter address">
-            <p>Amount:</p>
-            <input type="text" id="transfer-amount" placeholder="Enter amount">
+            <p>Amount (ETH):</p>
+            <input type="text" id="transfer-amount" placeholder="Enter amount in ETH">
             <button onclick="transferFunds()"><i class="fas fa-paper-plane"></i> Send</button>
         </div>
     </div>
@@ -554,10 +554,9 @@
             <p>Asset to Stake:</p>
             <select id="stake-asset">
                 <option value="ETH">Ethereum (ETH)</option>
-                <!-- Add more stakeable assets as needed -->
             </select>
-            <p>Amount to Stake:</p>
-            <input type="text" id="stake-amount" placeholder="Enter amount">
+            <p>Amount to Stake (ETH):</p>
+            <input type="text" id="stake-amount" placeholder="Enter amount in ETH">
             <p>Estimated APY: 5.2%</p>
             <button onclick="stakeFunds()"><i class="fas fa-lock"></i> Stake</button>
         </div>
@@ -570,8 +569,6 @@
             <p>Select Network:</p>
             <select id="blockchain-network">
                 <option value="ethereum">Ethereum Mainnet</option>
-                <option value="polygon">Polygon</option>
-                <option value="binance">Binance Smart Chain</option>
             </select>
             <button onclick="connectBlockchain()"><i class="fas fa-plug"></i> Connect</button>
         </div>
@@ -583,111 +580,143 @@
         let signer = null;
         let connectedChain = 'None';
 
-        // Blockchain connection (using Ethers.js with a fallback to Infura or similar)
+        // Connect to Ethereum Mainnet
         async function connectBlockchain() {
             const network = document.getElementById('blockchain-network').value;
-            let rpcUrl;
-            switch (network) {
-                case 'ethereum':
-                    rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'; // Replace with real Infura ID
-                    break;
-                case 'polygon':
-                    rpcUrl = 'https://polygon-rpc.com';
-                    break;
-                case 'binance':
-                    rpcUrl = 'https://bsc-dataseed.binance.org/';
-                    break;
-                default:
-                    rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID';
+            if (network !== 'ethereum') {
+                alert('Only Ethereum Mainnet is supported in this version.');
+                return;
             }
+
+            const rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'; // Replace with real Infura ID
 
             try {
                 provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-                // For real hardware wallet, integrate with Ledger's WebHID or similar; here simulating
+                // Simulate Ledger wallet (in real: use WebHID for Ledger device)
                 signer = ethers.Wallet.createRandom().connect(provider); // Simulated signer
-                connectedChain = network.charAt(0).toUpperCase() + network.slice(1);
+                connectedChain = 'Ethereum';
                 document.getElementById('connected-chain').textContent = connectedChain;
-                document.getElementById('status-indicator').textContent = '✔ Connected to ' + connectedChain;
-                alert('Connected to ' + connectedChain + ' blockchain!');
+                document.getElementById('status-indicator').textContent = '✔ Connected to Ethereum';
+                document.getElementById('status-indicator').style.color = '#2ecc71';
+
+                // Fetch wallet balance
+                const balance = await provider.getBalance(fullWalletAddress);
+                const ethBalance = ethers.utils.formatEther(balance);
+                document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+
+                alert('Connected to Ethereum Mainnet!');
                 toggleModal('connect-modal');
             } catch (error) {
                 console.error('Connection Error:', error);
+                document.getElementById('status-indicator').textContent = '❌ Disconnected';
+                document.getElementById('status-indicator').style.color = '#e74c3c';
                 alert('Failed to connect: ' + error.message);
             }
         }
 
-        // Enhanced transfer function with blockchain interaction (simulated for demo; in real, sign and send tx)
+        // Transfer ETH on Ethereum blockchain
         async function transferFunds() {
             const asset = document.getElementById('transfer-asset').value;
             const address = document.getElementById('transfer-address').value;
             const amount = document.getElementById('transfer-amount').value;
 
             if (!provider || !signer) {
-                alert('Please connect to a blockchain first.');
+                alert('Please connect to Ethereum blockchain first.');
                 return;
             }
 
-            if (address && amount) {
-                try {
-                    // Simulated transaction (in real: use ERC20 contract for tokens or native for ETH/BTC)
-                    const tx = await signer.sendTransaction({
-                        to: address,
-                        value: ethers.utils.parseEther(amount) // Assuming ETH; adjust for asset
-                    });
-                    alert(`Transaction sent: ${tx.hash}`);
-                    addTransactionToHistory('Send', asset, amount, address, 'Pending');
-                    await tx.wait();
-                    updateTransactionStatus(tx.hash, 'Confirmed');
-                } catch (error) {
-                    console.error('Transfer Error:', error);
-                    alert('Transfer failed: ' + error.message);
-                }
-                document.getElementById('transfer-address').value = '';
-                document.getElementById('transfer-amount').value = '';
-                toggleModal('transfer-modal');
-            } else {
-                alert('Please fill all fields.');
+            if (asset !== 'ETH') {
+                alert('Only ETH transfers are supported in this version.');
+                return;
             }
+
+            if (!ethers.utils.isAddress(address)) {
+                alert('Invalid Ethereum address.');
+                return;
+            }
+
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('Please enter a valid amount.');
+                return;
+            }
+
+            try {
+                const tx = await signer.sendTransaction({
+                    to: address,
+                    value: ethers.utils.parseEther(amount),
+                    gasLimit: 21000,
+                    gasPrice: await provider.getGasPrice()
+                });
+                addTransactionToHistory('Send', 'ETH', amount, address, 'Pending', tx.hash);
+                alert(`Transaction sent: ${tx.hash}`);
+                await tx.wait();
+                updateTransactionStatus(tx.hash, 'Confirmed');
+
+                // Update ETH balance
+                const balance = await provider.getBalance(fullWalletAddress);
+                const ethBalance = ethers.utils.formatEther(balance);
+                document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+            } catch (error) {
+                console.error('Transfer Error:', error);
+                alert('Transfer failed: ' + error.message);
+            }
+            document.getElementById('transfer-address').value = '';
+            document.getElementById('transfer-amount').value = '';
+            toggleModal('transfer-modal');
         }
 
-        // Staking function (simulated; in real, interact with staking contract e.g., for ETH 2.0)
+        // Stake ETH (simulated with Ethereum staking contract interaction)
         async function stakeFunds() {
             const asset = document.getElementById('stake-asset').value;
             const amount = document.getElementById('stake-amount').value;
 
             if (!provider || !signer) {
-                alert('Please connect to a blockchain first.');
+                alert('Please connect to Ethereum blockchain first.');
                 return;
             }
 
-            if (amount) {
-                try {
-                    // Simulated staking tx (real: call staking contract deposit)
-                    const tx = await signer.sendTransaction({
-                        to: '0xStakingContractAddress', // Placeholder
-                        value: ethers.utils.parseEther(amount),
-                        data: '0xStakeData' // Placeholder ABI
-                    });
-                    alert(`Staking transaction sent: ${tx.hash}`);
-                    addTransactionToHistory('Stake', asset, amount, 'Staking Pool', 'Pending');
-                    await tx.wait();
-                    updateTransactionStatus(tx.hash, 'Confirmed');
-                    // Update staked balance (simulated)
-                    const stakedAmount = parseFloat(localStorage.getItem('staked_' + asset) || 0) + parseFloat(amount);
-                    localStorage.setItem('staked_' + asset, stakedAmount);
-                } catch (error) {
-                    console.error('Staking Error:', error);
-                    alert('Staking failed: ' + error.message);
-                }
-                document.getElementById('stake-amount').value = '';
-                toggleModal('stake-modal');
-            } else {
-                alert('Please enter an amount.');
+            if (asset !== 'ETH') {
+                alert('Only ETH staking is supported in this version.');
+                return;
             }
+
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('Please enter a valid amount.');
+                return;
+            }
+
+            try {
+                // Simulated staking contract interaction (replace with real contract address and ABI)
+                const stakingContractAddress = '0x00000000219ab540356cBB839Cbe05303d7705Fa'; // Ethereum 2.0 deposit contract
+                const tx = await signer.sendTransaction({
+                    to: stakingContractAddress,
+                    value: ethers.utils.parseEther(amount),
+                    gasLimit: 100000,
+                    gasPrice: await provider.getGasPrice()
+                });
+                addTransactionToHistory('Stake', 'ETH', amount, stakingContractAddress, 'Pending', tx.hash);
+                alert(`Staking transaction sent: ${tx.hash}`);
+                await tx.wait();
+                updateTransactionStatus(tx.hash, 'Confirmed');
+
+                // Update staked balance (simulated)
+                const stakedAmount = parseFloat(localStorage.getItem('staked_ETH') || 0) + parseFloat(amount);
+                localStorage.setItem('staked_ETH', stakedAmount);
+
+                // Update ETH balance
+                const balance = await provider.getBalance(fullWalletAddress);
+                const ethBalance = ethers.utils.formatEther(balance);
+                document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+            } catch (error) {
+                console.error('Staking Error:', error);
+                alert('Staking failed: ' + error.message);
+            }
+            document.getElementById('stake-amount').value = '';
+            toggleModal('stake-modal');
         }
 
-        // Helper to add transaction to history table
-        function addTransactionToHistory(type, asset, amount, address, status) {
+        // Add transaction to history table
+        function addTransactionToHistory(type, asset, amount, address, status, txHash) {
             const tableBody = document.getElementById('transaction-table');
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -696,15 +725,14 @@
                 <td>${asset}</td>
                 <td>${amount} ${asset}</td>
                 <td>${address.substring(0, 6)}...${address.substring(address.length - 4)}</td>
-                <td id="tx-status-${address}"><i class="fas fa-hourglass-half" style="color: #f39c12;"></i> ${status}</td>
+                <td id="tx-status-${txHash}"><i class="fas ${status === 'Pending' ? 'fa-hourglass-half' : 'fa-check'}" style="color: ${status === 'Pending' ? '#f39c12' : '#2ecc71'};"></i> ${status}</td>
             `;
             tableBody.prepend(row);
         }
 
         // Update transaction status
         function updateTransactionStatus(txHash, status) {
-            // In real, poll for tx receipt; here simulated
-            const statusElement = document.querySelector(`[id^="tx-status-"]`); // Simplify for demo
+            const statusElement = document.getElementById(`tx-status-${txHash}`);
             if (statusElement) {
                 statusElement.innerHTML = `<i class="fas fa-check" style="color: #2ecc71;"></i> ${status}`;
             }
@@ -725,7 +753,6 @@
         }
 
         const btcAmountFixed = 15.68;
-        const ethAmountFixed = 343.23;
         const xrpAmountFixed = 186046.51;
         const liabilities = 0;
         const initialInvestment = 30000;
@@ -777,7 +804,15 @@
                 if (xrpPrice === 0 && previousPrices.xrp) throw new Error('Invalid XRP price data');
 
                 const btcValue = btcAmountFixed * btcPrice;
-                const ethValue = ethAmountFixed * ethPrice;
+                let ethValue = 0;
+                if (provider) {
+                    const balance = await provider.getBalance(fullWalletAddress);
+                    const ethBalance = ethers.utils.formatEther(balance);
+                    ethValue = parseFloat(ethBalance) * ethPrice;
+                    document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+                } else {
+                    ethValue = 343.23 * ethPrice; // Fallback to static value
+                }
                 const xrpValue = xrpAmountFixed * xrpPrice;
                 const total = btcValue + ethValue + xrpValue;
                 const netWorth = total - liabilities;
@@ -797,8 +832,8 @@
                 if (lastUpdateDate !== currentDate && previousPrices.btc !== 0) {
                     dailyPnl.btc.euro = btcAmountFixed * (btcPrice - previousPrices.btc);
                     dailyPnl.btc.percent = (dailyPnl.btc.euro / (btcAmountFixed * previousPrices.btc)) * 100;
-                    dailyPnl.eth.euro = ethAmountFixed * (ethPrice - previousPrices.eth);
-                    dailyPnl.eth.percent = (dailyPnl.eth.euro / (ethAmountFixed * previousPrices.eth)) * 100;
+                    dailyPnl.eth.euro = ethValue - (343.23 * previousPrices.eth);
+                    dailyPnl.eth.percent = (dailyPnl.eth.euro / (343.23 * previousPrices.eth)) * 100;
                     dailyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - previousPrices.xrp);
                     dailyPnl.xrp.percent = (dailyPnl.xrp.euro / (xrpAmountFixed * previousPrices.xrp)) * 100;
 
@@ -812,8 +847,8 @@
                     if (hourlyPrices.btc !== 0) {
                         hourlyPnl.btc.euro = btcAmountFixed * (btcPrice - hourlyPrices.btc);
                         hourlyPnl.btc.percent = (hourlyPnl.btc.euro / (btcAmountFixed * hourlyPrices.btc)) * 100;
-                        hourlyPnl.eth.euro = ethAmountFixed * (ethPrice - hourlyPrices.eth);
-                        hourlyPnl.eth.percent = (hourlyPnl.eth.euro / (ethAmountFixed * hourlyPrices.eth)) * 100;
+                        hourlyPnl.eth.euro = ethValue - (343.23 * hourlyPrices.eth);
+                        hourlyPnl.eth.percent = (hourlyPnl.eth.euro / (343.23 * hourlyPrices.eth)) * 100;
                         hourlyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - hourlyPrices.xrp);
                         hourlyPnl.xrp.percent = (hourlyPnl.xrp.euro / (xrpAmountFixed * hourlyPrices.xrp)) * 100;
                     }
@@ -829,26 +864,21 @@
                 document.getElementById('btc-value').textContent = `€${formatNumber(btcValue, 2)}`;
                 document.getElementById('btc-pnl-24h-percent').textContent = `${dailyPnl.btc.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.btc.percent, 2)}%) `;
                 document.getElementById('btc-pnl-24h-percent').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('btc-pnl-24h-percent').style.color = '#2ecc71';
                 document.getElementById('btc-pnl-24h-euro').textContent = `${dailyPnl.btc.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(dailyPnl.btc.euro), 2)}`;
                 document.getElementById('btc-pnl-24h-euro').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
                 document.getElementById('btc-pnl-1h-percent').textContent = `${hourlyPnl.btc.percent >= 0 ? '(+' : '(-'}${formatNumber(hourlyPnl.btc.percent, 2)}%) `;
                 document.getElementById('btc-pnl-1h-percent').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('btc-pnl-1h-percent').style.color = '#2ecc71';
                 document.getElementById('btc-pnl-1h-euro').textContent = `${hourlyPnl.btc.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(hourlyPnl.btc.euro), 2)}`;
                 document.getElementById('btc-pnl-1h-euro').className = hourlyPnl.btc.euro >= 0 ? 'gain' : 'loss';
 
                 document.getElementById('eth-price').textContent = formatNumber(ethPrice, 2);
-                document.getElementById('eth-amount').textContent = formatNumber(ethAmountFixed, 2);
                 document.getElementById('eth-value').textContent = `€${formatNumber(ethValue, 2)}`;
                 document.getElementById('eth-pnl-24h-percent').textContent = `${dailyPnl.eth.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.eth.percent, 2)}%) `;
                 document.getElementById('eth-pnl-24h-percent').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('eth-pnl-24h-percent').style.color = '#2ecc71';
                 document.getElementById('eth-pnl-24h-euro').textContent = `${dailyPnl.eth.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(dailyPnl.eth.euro), 2)}`;
                 document.getElementById('eth-pnl-24h-euro').className = dailyPnl.eth.euro >= 0 ? 'gain' : 'loss';
                 document.getElementById('eth-pnl-1h-percent').textContent = `${hourlyPnl.eth.percent >= 0 ? '(+' : '(-'}${formatNumber(hourlyPnl.eth.percent, 2)}%) `;
                 document.getElementById('eth-pnl-1h-percent').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('eth-pnl-1h-percent').style.color = '#2ecc71';
                 document.getElementById('eth-pnl-1h-euro').textContent = `${hourlyPnl.eth.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(hourlyPnl.eth.euro), 2)}`;
                 document.getElementById('eth-pnl-1h-euro').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
 
@@ -857,12 +887,10 @@
                 document.getElementById('xrp-value').textContent = `€${formatNumber(xrpValue, 2)}`;
                 document.getElementById('xrp-pnl-24h-percent').textContent = `${dailyPnl.xrp.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.xrp.percent, 2)}%) `;
                 document.getElementById('xrp-pnl-24h-percent').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('xrp-pnl-24h-percent').style.color = '#2ecc71';
                 document.getElementById('xrp-pnl-24h-euro').textContent = `${dailyPnl.xrp.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(dailyPnl.xrp.euro), 2)}`;
                 document.getElementById('xrp-pnl-24h-euro').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
                 document.getElementById('xrp-pnl-1h-percent').textContent = `${hourlyPnl.xrp.percent >= 0 ? '(+' : '(-'}${formatNumber(hourlyPnl.xrp.percent, 2)}%) `;
                 document.getElementById('xrp-pnl-1h-percent').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
-                document.getElementById('xrp-pnl-1h-percent').style.color = '#2ecc71';
                 document.getElementById('xrp-pnl-1h-euro').textContent = `${hourlyPnl.xrp.euro >= 0 ? '+€' : '-€'}${formatNumber(Math.abs(hourlyPnl.xrp.euro), 2)}`;
                 document.getElementById('xrp-pnl-1h-euro').className = hourlyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
 
@@ -895,7 +923,7 @@
 
                 const performanceData = historicalPrices.btc.map((price, index) => {
                     const btcHist = btcAmountFixed * (index === 8 ? btcPrice : historicalPrices.btc[index]);
-                    const ethHist = ethAmountFixed * (index === 8 ? ethPrice : historicalPrices.eth[index]);
+                    const ethHist = (provider ? parseFloat(document.getElementById('eth-amount').textContent) : 343.23) * (index === 8 ? ethPrice : historicalPrices.eth[index]);
                     const xrpHist = xrpAmountFixed * (index === 8 ? xrpPrice : historicalPrices.xrp[index]);
                     return btcHist + ethHist + xrpHist;
                 });
@@ -939,7 +967,7 @@
 
         setInterval(() => {
             document.getElementById('status-indicator').style.color = isUpdating ? '#e74c3c' : '#2ecc71';
-            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : '✔ Connected to ' + connectedChain;
+            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : `✔ Connected to ${connectedChain}`;
         }, 1000);
 
         setInterval(updatePortfolio, 300000);
@@ -947,7 +975,6 @@
 
         document.getElementById('toggle-theme').addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
-            document.getElementById('toggle-theme').textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
             document.getElementById('toggle-theme').innerHTML = `<i class="fas fa-adjust"></i> <span>${document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode'}</span>`;
         });
 
@@ -984,6 +1011,12 @@
 
         function logout() {
             if (confirm('Are you sure you want to log out?')) {
+                provider = null;
+                signer = null;
+                connectedChain = 'None';
+                document.getElementById('connected-chain').textContent = connectedChain;
+                document.getElementById('status-indicator').textContent = '❌ Disconnected';
+                document.getElementById('status-indicator').style.color = '#e74c3c';
                 alert('Logout successful!');
             }
         }
@@ -1023,3 +1056,4 @@
     </script>
 </body>
 </html>
+```
