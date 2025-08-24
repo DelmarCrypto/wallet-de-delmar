@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Wallet Delmar</title>
+    <title>Ledger Wallet</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script> <!-- Added Ethers.js for blockchain interactions -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -305,7 +306,7 @@
             margin-bottom: 15px;
         }
 
-        .modal-content input {
+        .modal-content input, .modal-content select {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -316,7 +317,7 @@
             font-size: 14px;
         }
 
-        .light-mode .modal-content input {
+        .light-mode .modal-content input, .light-mode .modal-content select {
             border: 1px solid #ddd;
             background-color: #ecf0f1;
             color: #333333;
@@ -354,7 +355,7 @@
             color: #333333;
         }
 
-        #deposit-modal.toggle-active, #earn-modal.toggle-active, #transfer-modal.toggle-active {
+        #deposit-modal.toggle-active, #earn-modal.toggle-active, #transfer-modal.toggle-active, #stake-modal.toggle-active, #connect-modal.toggle-active {
             display: flex;
         }
 
@@ -383,7 +384,8 @@
                 <button onclick="toggleModal('deposit-modal')"><i class="fas fa-download"></i> <span>Deposit</span></button>
                 <button onclick="toggleModal('transfer-modal')"><i class="fas fa-paper-plane"></i> <span>Transfer</span></button>
                 <button onclick="toggleModal('earn-modal')"><i class="fas fa-coins"></i> <span>Earn</span></button>
-                <button><i class="fas fa-lock"></i> <span>Staking ETH</span></button>
+                <button onclick="toggleModal('stake-modal')"><i class="fas fa-lock"></i> <span>Stake</span></button>
+                <button onclick="toggleModal('connect-modal')"><i class="fas fa-plug"></i> <span>Connect Blockchain</span></button>
                 <button id="toggle-theme"><i class="fas fa-adjust"></i> <span>Light Mode</span></button>
                 <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
             </div>
@@ -391,14 +393,16 @@
 
         <div class="main-content" id="main-content">
             <div class="portfolio-header">
-                <h1>Wallet Delmar</h1>
+                <h1>Ledger Wallet</h1>
                 <div class="wallet-info">
                     <span id="wallet-address" onclick="copyAddress()">0x0a79...760B <i class="fas fa-copy"></i></span>
                     <span>Status: <span id="status-indicator" style="color: #2ecc71;">✔ Connected</span></span>
+                    <span>Connected Chain: <span id="connected-chain">None</span></span>
                 </div>
                 <div class="action-buttons">
                     <button onclick="toggleModal('deposit-modal')"><i class="fas fa-download"></i> Receive</button>
                     <button onclick="toggleModal('transfer-modal')"><i class="fas fa-paper-plane"></i> Send</button>
+                    <button onclick="toggleModal('stake-modal')"><i class="fas fa-lock"></i> Stake</button>
                     <button onclick="updatePortfolio()"><i class="fas fa-sync"></i> Refresh</button>
                 </div>
             </div>
@@ -430,7 +434,7 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="transaction-table">
                         <tr>
                             <td>17/03/2025 14:30</td>
                             <td>Send</td>
@@ -462,6 +466,7 @@
                             <th>Value</th>
                             <th>P/L (24h)</th>
                             <th>P/L (1h)</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="portfolio-table">
@@ -472,6 +477,7 @@
                             <td id="btc-value">€1,200,000.00</td>
                             <td id="btc-pnl-24h"><span id="btc-pnl-24h-percent"></span> <span id="btc-pnl-24h-euro"></span></td>
                             <td id="btc-pnl-1h"><span id="btc-pnl-1h-percent"></span> <span id="btc-pnl-1h-euro"></span></td>
+                            <td><button onclick="toggleModal('transfer-modal', 'BTC')">Send</button></td>
                         </tr>
                         <tr>
                             <td><img src="eth.png" alt="ETH"> Ethereum (ETH)</td>
@@ -480,6 +486,7 @@
                             <td id="eth-value">€600,000.00</td>
                             <td id="eth-pnl-24h"><span id="eth-pnl-24h-percent"></span> <span id="eth-pnl-24h-euro"></span></td>
                             <td id="eth-pnl-1h"><span id="eth-pnl-1h-percent"></span> <span id="eth-pnl-1h-euro"></span></td>
+                            <td><button onclick="toggleModal('transfer-modal', 'ETH')">Send</button> <button onclick="toggleModal('stake-modal', 'ETH')">Stake</button></td>
                         </tr>
                         <tr>
                             <td><img src="xrp.png" alt="XRP"> XRP</td>
@@ -488,6 +495,7 @@
                             <td id="xrp-value">€1,745,097.00</td>
                             <td id="xrp-pnl-24h"><span id="xrp-pnl-24h-percent"></span> <span id="xrp-pnl-24h-euro"></span></td>
                             <td id="xrp-pnl-1h"><span id="xrp-pnl-1h-percent"></span> <span id="xrp-pnl-1h-euro"></span></td>
+                            <td><button onclick="toggleModal('transfer-modal', 'XRP')">Send</button></td>
                         </tr>
                     </tbody>
                 </table>
@@ -516,11 +524,17 @@
         <div class="modal-content">
             <span class="close" onclick="toggleModal('transfer-modal')">×</span>
             <h2>Send Funds</h2>
+            <p>Asset:</p>
+            <select id="transfer-asset">
+                <option value="BTC">Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="XRP">XRP</option>
+            </select>
             <p>Destination Address:</p>
             <input type="text" id="transfer-address" placeholder="Enter address">
             <p>Amount:</p>
             <input type="text" id="transfer-amount" placeholder="Enter amount">
-            <button onclick="simulateTransfer()"><i class="fas fa-paper-plane"></i> Send</button>
+            <button onclick="transferFunds()"><i class="fas fa-paper-plane"></i> Send</button>
         </div>
     </div>
 
@@ -528,13 +542,173 @@
         <div class="modal-content">
             <span class="close" onclick="toggleModal('earn-modal')">×</span>
             <h2>Earn</h2>
-            <p>Explore earning opportunities here.</p>
-            <button onclick="alert('Earning feature coming soon!')">Learn More</button>
+            <p>Explore earning opportunities like staking and lending.</p>
+            <button onclick="toggleModal('stake-modal')">Start Staking</button>
+        </div>
+    </div>
+
+    <div id="stake-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleModal('stake-modal')">×</span>
+            <h2>Stake Assets</h2>
+            <p>Asset to Stake:</p>
+            <select id="stake-asset">
+                <option value="ETH">Ethereum (ETH)</option>
+                <!-- Add more stakeable assets as needed -->
+            </select>
+            <p>Amount to Stake:</p>
+            <input type="text" id="stake-amount" placeholder="Enter amount">
+            <p>Estimated APY: 5.2%</p>
+            <button onclick="stakeFunds()"><i class="fas fa-lock"></i> Stake</button>
+        </div>
+    </div>
+
+    <div id="connect-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleModal('connect-modal')">×</span>
+            <h2>Connect to Blockchain</h2>
+            <p>Select Network:</p>
+            <select id="blockchain-network">
+                <option value="ethereum">Ethereum Mainnet</option>
+                <option value="polygon">Polygon</option>
+                <option value="binance">Binance Smart Chain</option>
+            </select>
+            <button onclick="connectBlockchain()"><i class="fas fa-plug"></i> Connect</button>
         </div>
     </div>
 
     <script>
         const fullWalletAddress = "0x0a79EDb600Baa0EBe3733007c5E9ee115619760B";
+        let provider = null;
+        let signer = null;
+        let connectedChain = 'None';
+
+        // Blockchain connection (using Ethers.js with a fallback to Infura or similar)
+        async function connectBlockchain() {
+            const network = document.getElementById('blockchain-network').value;
+            let rpcUrl;
+            switch (network) {
+                case 'ethereum':
+                    rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'; // Replace with real Infura ID
+                    break;
+                case 'polygon':
+                    rpcUrl = 'https://polygon-rpc.com';
+                    break;
+                case 'binance':
+                    rpcUrl = 'https://bsc-dataseed.binance.org/';
+                    break;
+                default:
+                    rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID';
+            }
+
+            try {
+                provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+                // For real hardware wallet, integrate with Ledger's WebHID or similar; here simulating
+                signer = ethers.Wallet.createRandom().connect(provider); // Simulated signer
+                connectedChain = network.charAt(0).toUpperCase() + network.slice(1);
+                document.getElementById('connected-chain').textContent = connectedChain;
+                document.getElementById('status-indicator').textContent = '✔ Connected to ' + connectedChain;
+                alert('Connected to ' + connectedChain + ' blockchain!');
+                toggleModal('connect-modal');
+            } catch (error) {
+                console.error('Connection Error:', error);
+                alert('Failed to connect: ' + error.message);
+            }
+        }
+
+        // Enhanced transfer function with blockchain interaction (simulated for demo; in real, sign and send tx)
+        async function transferFunds() {
+            const asset = document.getElementById('transfer-asset').value;
+            const address = document.getElementById('transfer-address').value;
+            const amount = document.getElementById('transfer-amount').value;
+
+            if (!provider || !signer) {
+                alert('Please connect to a blockchain first.');
+                return;
+            }
+
+            if (address && amount) {
+                try {
+                    // Simulated transaction (in real: use ERC20 contract for tokens or native for ETH/BTC)
+                    const tx = await signer.sendTransaction({
+                        to: address,
+                        value: ethers.utils.parseEther(amount) // Assuming ETH; adjust for asset
+                    });
+                    alert(`Transaction sent: ${tx.hash}`);
+                    addTransactionToHistory('Send', asset, amount, address, 'Pending');
+                    await tx.wait();
+                    updateTransactionStatus(tx.hash, 'Confirmed');
+                } catch (error) {
+                    console.error('Transfer Error:', error);
+                    alert('Transfer failed: ' + error.message);
+                }
+                document.getElementById('transfer-address').value = '';
+                document.getElementById('transfer-amount').value = '';
+                toggleModal('transfer-modal');
+            } else {
+                alert('Please fill all fields.');
+            }
+        }
+
+        // Staking function (simulated; in real, interact with staking contract e.g., for ETH 2.0)
+        async function stakeFunds() {
+            const asset = document.getElementById('stake-asset').value;
+            const amount = document.getElementById('stake-amount').value;
+
+            if (!provider || !signer) {
+                alert('Please connect to a blockchain first.');
+                return;
+            }
+
+            if (amount) {
+                try {
+                    // Simulated staking tx (real: call staking contract deposit)
+                    const tx = await signer.sendTransaction({
+                        to: '0xStakingContractAddress', // Placeholder
+                        value: ethers.utils.parseEther(amount),
+                        data: '0xStakeData' // Placeholder ABI
+                    });
+                    alert(`Staking transaction sent: ${tx.hash}`);
+                    addTransactionToHistory('Stake', asset, amount, 'Staking Pool', 'Pending');
+                    await tx.wait();
+                    updateTransactionStatus(tx.hash, 'Confirmed');
+                    // Update staked balance (simulated)
+                    const stakedAmount = parseFloat(localStorage.getItem('staked_' + asset) || 0) + parseFloat(amount);
+                    localStorage.setItem('staked_' + asset, stakedAmount);
+                } catch (error) {
+                    console.error('Staking Error:', error);
+                    alert('Staking failed: ' + error.message);
+                }
+                document.getElementById('stake-amount').value = '';
+                toggleModal('stake-modal');
+            } else {
+                alert('Please enter an amount.');
+            }
+        }
+
+        // Helper to add transaction to history table
+        function addTransactionToHistory(type, asset, amount, address, status) {
+            const tableBody = document.getElementById('transaction-table');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${new Date().toLocaleString('fr-FR')}</td>
+                <td>${type}</td>
+                <td>${asset}</td>
+                <td>${amount} ${asset}</td>
+                <td>${address.substring(0, 6)}...${address.substring(address.length - 4)}</td>
+                <td id="tx-status-${address}"><i class="fas fa-hourglass-half" style="color: #f39c12;"></i> ${status}</td>
+            `;
+            tableBody.prepend(row);
+        }
+
+        // Update transaction status
+        function updateTransactionStatus(txHash, status) {
+            // In real, poll for tx receipt; here simulated
+            const statusElement = document.querySelector(`[id^="tx-status-"]`); // Simplify for demo
+            if (statusElement) {
+                statusElement.innerHTML = `<i class="fas fa-check" style="color: #2ecc71;"></i> ${status}`;
+            }
+        }
 
         function formatNumber(number, decimals = 2) {
             return number.toFixed(decimals)
@@ -765,7 +939,7 @@
 
         setInterval(() => {
             document.getElementById('status-indicator').style.color = isUpdating ? '#e74c3c' : '#2ecc71';
-            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : '✔ Connected';
+            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : '✔ Connected to ' + connectedChain;
         }, 1000);
 
         setInterval(updatePortfolio, 300000);
@@ -789,7 +963,7 @@
             });
         }
 
-        function toggleModal(modalId) {
+        function toggleModal(modalId, asset = '') {
             const modal = document.getElementById(modalId);
             if (modal.style.display === 'flex') {
                 modal.style.display = 'none';
@@ -801,25 +975,10 @@
                 });
                 modal.style.display = 'flex';
                 modal.classList.add('toggle-active');
-            }
-        }
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            modal.style.display = 'none';
-            modal.classList.remove('toggle-active');
-        }
-
-        function simulateTransfer() {
-            const address = document.getElementById('transfer-address').value;
-            const amount = document.getElementById('transfer-amount').value;
-            if (address && amount) {
-                alert(`Simulated Transfer: ${amount} sent to ${address}`);
-                document.getElementById('transfer-address').value = '';
-                document.getElementById('transfer-amount').value = '';
-                closeModal('transfer-modal');
-            } else {
-                alert('Please fill all fields.');
+                if (asset) {
+                    const select = modal.querySelector('select');
+                    if (select) select.value = asset;
+                }
             }
         }
 
