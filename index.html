@@ -397,7 +397,7 @@
                 <h1>Ledger Wallet</h1>
                 <div class="wallet-info">
                     <span id="wallet-address" onclick="copyAddress()">0x0a79...760B <i class="fas fa-copy"></i></span>
-                    <span>Status: <span id="status-indicator" style="color: #2ecc71;">✔ Connected</span></span>
+                    <span>Status: <span id="status-indicator" style="color: #e74c3c;">❌ Disconnected</span></span>
                     <span>Connected Chain: <span id="connected-chain">None</span></span>
                 </div>
                 <div class="action-buttons">
@@ -441,7 +441,7 @@
                             <td>Send</td>
                             <td>BTC</td>
                             <td>0.5 BTC</td>
-                            <td>0x5678...efgh</td>
+                            <td>1A1zP1...3c4d</td>
                             <td><i class="fas fa-check" style="color: #2ecc71;"></i> Confirmed</td>
                         </tr>
                         <tr>
@@ -527,13 +527,14 @@
             <h2>Send Funds</h2>
             <p>Asset:</p>
             <select id="transfer-asset">
+                <option value="BTC">Bitcoin (BTC)</option>
                 <option value="ETH">Ethereum (ETH)</option>
-                <!-- BTC and XRP require cross-chain or ERC20 wrappers -->
+                <option value="XRP">XRP</option>
             </select>
             <p>Destination Address:</p>
             <input type="text" id="transfer-address" placeholder="Enter address">
-            <p>Amount (ETH):</p>
-            <input type="text" id="transfer-amount" placeholder="Enter amount in ETH">
+            <p>Amount:</p>
+            <input type="text" id="transfer-amount" placeholder="Enter amount">
             <button onclick="transferFunds()"><i class="fas fa-paper-plane"></i> Send</button>
         </div>
     </div>
@@ -568,43 +569,92 @@
             <h2>Connect to Blockchain</h2>
             <p>Select Network:</p>
             <select id="blockchain-network">
+                <option value="bitcoin">Bitcoin Mainnet</option>
                 <option value="ethereum">Ethereum Mainnet</option>
+                <option value="xrp">XRP Mainnet</option>
             </select>
             <button onclick="connectBlockchain()"><i class="fas fa-plug"></i> Connect</button>
         </div>
     </div>
 
     <script>
-        const fullWalletAddress = "0x0a79EDb600Baa0EBe3733007c5E9ee115619760B";
+        const fullWalletAddress = {
+            btc: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+            eth: "0x0a79EDb600Baa0EBe3733007c5E9ee115619760B",
+            xrp: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
+        };
         let provider = null;
         let signer = null;
         let connectedChain = 'None';
+        let btcBalance = 15.68;
+        let xrpBalance = 186046.51;
 
-        // Connect to Ethereum Mainnet
+        // Validate address based on blockchain
+        function isValidAddress(address, network) {
+            if (network === 'ethereum') {
+                return ethers.utils.isAddress(address);
+            } else if (network === 'bitcoin') {
+                // Simplified Bitcoin address validation (starts with 1, 3, or bc1, 26-35 chars)
+                return /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$|^bc1[a-zA-Z0-9]{39,59}$/.test(address);
+            } else if (network === 'xrp') {
+                // Simplified XRP address validation (starts with r, 25-35 chars)
+                return /^r[0-9a-zA-Z]{24,34}$/.test(address);
+            }
+            return false;
+        }
+
+        // Connect to selected blockchain
         async function connectBlockchain() {
             const network = document.getElementById('blockchain-network').value;
-            if (network !== 'ethereum') {
-                alert('Only Ethereum Mainnet is supported in this version.');
-                return;
+            let rpcUrl;
+            let chainName;
+
+            switch (network) {
+                case 'bitcoin':
+                    rpcUrl = 'https://api.blockcypher.com/v1/btc/main'; // Simulated Bitcoin RPC
+                    chainName = 'Bitcoin Mainnet';
+                    break;
+                case 'ethereum':
+                    rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'; // Replace with real Infura ID
+                    chainName = 'Ethereum Mainnet';
+                    break;
+                case 'xrp':
+                    rpcUrl = 'https://xrplcluster.com'; // Simulated XRP RPC
+                    chainName = 'XRP Mainnet';
+                    break;
+                default:
+                    alert('Invalid network selected.');
+                    return;
             }
 
-            const rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'; // Replace with real Infura ID
-
             try {
-                provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-                // Simulate Ledger wallet (in real: use WebHID for Ledger device)
-                signer = ethers.Wallet.createRandom().connect(provider); // Simulated signer
-                connectedChain = 'Ethereum';
-                document.getElementById('connected-chain').textContent = connectedChain;
-                document.getElementById('status-indicator').textContent = '✔ Connected to Ethereum';
+                if (network === 'ethereum') {
+                    provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+                    signer = ethers.Wallet.createRandom().connect(provider); // Simulated Ledger signer
+                    const balance = await provider.getBalance(fullWalletAddress.eth);
+                    const ethBalance = ethers.utils.formatEther(balance);
+                    document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+                } else {
+                    // Simulate connection for Bitcoin and XRP
+                    provider = null;
+                    signer = null;
+                    alert(`${chainName} connection is simulated. Full implementation requires additional libraries (bitcoinjs-lib for Bitcoin, xrpl.js for XRP).`);
+                    if (network === 'bitcoin') {
+                        document.getElementById('btc-amount').textContent = formatNumber(btcBalance, 2);
+                    } else if (network === 'xrp') {
+                        document.getElementById('xrp-amount').textContent = formatNumber(xrpBalance, 2);
+                    }
+                }
+
+                connectedChain = chainName;
+                document.getElementById('connected-chain').textContent = chainName;
+                document.getElementById('status-indicator').textContent = `✔ Connected to ${chainName}`;
                 document.getElementById('status-indicator').style.color = '#2ecc71';
-
-                // Fetch wallet balance
-                const balance = await provider.getBalance(fullWalletAddress);
-                const ethBalance = ethers.utils.formatEther(balance);
-                document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
-
-                alert('Connected to Ethereum Mainnet!');
+                document.getElementById('wallet-address').textContent = 
+                    network === 'bitcoin' ? `${fullWalletAddress.btc.substring(0, 6)}...${fullWalletAddress.btc.substring(fullWalletAddress.btc.length - 4)}` :
+                    network === 'xrp' ? `${fullWalletAddress.xrp.substring(0, 6)}...${fullWalletAddress.xrp.substring(fullWalletAddress.xrp.length - 4)}` :
+                    `${fullWalletAddress.eth.substring(0, 6)}...${fullWalletAddress.eth.substring(fullWalletAddress.eth.length - 4)}`;
+                alert(`Connected to ${chainName}!`);
                 toggleModal('connect-modal');
             } catch (error) {
                 console.error('Connection Error:', error);
@@ -614,24 +664,14 @@
             }
         }
 
-        // Transfer ETH on Ethereum blockchain
+        // Transfer funds based on connected blockchain
         async function transferFunds() {
             const asset = document.getElementById('transfer-asset').value;
             const address = document.getElementById('transfer-address').value;
             const amount = document.getElementById('transfer-amount').value;
 
-            if (!provider || !signer) {
-                alert('Please connect to Ethereum blockchain first.');
-                return;
-            }
-
-            if (asset !== 'ETH') {
-                alert('Only ETH transfers are supported in this version.');
-                return;
-            }
-
-            if (!ethers.utils.isAddress(address)) {
-                alert('Invalid Ethereum address.');
+            if (connectedChain === 'None') {
+                alert('Please connect to a blockchain first.');
                 return;
             }
 
@@ -640,22 +680,71 @@
                 return;
             }
 
-            try {
-                const tx = await signer.sendTransaction({
-                    to: address,
-                    value: ethers.utils.parseEther(amount),
-                    gasLimit: 21000,
-                    gasPrice: await provider.getGasPrice()
-                });
-                addTransactionToHistory('Send', 'ETH', amount, address, 'Pending', tx.hash);
-                alert(`Transaction sent: ${tx.hash}`);
-                await tx.wait();
-                updateTransactionStatus(tx.hash, 'Confirmed');
+            let network;
+            if (asset === 'BTC' && connectedChain === 'Bitcoin Mainnet') {
+                network = 'bitcoin';
+            } else if (asset === 'ETH' && connectedChain === 'Ethereum Mainnet') {
+                network = 'ethereum';
+            } else if (asset === 'XRP' && connectedChain === 'XRP Mainnet') {
+                network = 'xrp';
+            } else {
+                alert(`Please connect to ${asset === 'BTC' ? 'Bitcoin' : asset === 'ETH' ? 'Ethereum' : 'XRP'} Mainnet to transfer ${asset}.`);
+                return;
+            }
 
-                // Update ETH balance
-                const balance = await provider.getBalance(fullWalletAddress);
-                const ethBalance = ethers.utils.formatEther(balance);
-                document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+            if (!isValidAddress(address, network)) {
+                alert(`Invalid ${asset} address.`);
+                return;
+            }
+
+            try {
+                let txHash;
+                if (network === 'ethereum') {
+                    if (!provider || !signer) {
+                        alert('Ethereum provider not initialized.');
+                        return;
+                    }
+                    const tx = await signer.sendTransaction({
+                        to: address,
+                        value: ethers.utils.parseEther(amount),
+                        gasLimit: 21000,
+                        gasPrice: await provider.getGasPrice()
+                    });
+                    txHash = tx.hash;
+                    addTransactionToHistory('Send', 'ETH', amount, address, 'Pending', txHash);
+                    alert(`Transaction sent: ${txHash}`);
+                    await tx.wait();
+                    updateTransactionStatus(txHash, 'Confirmed');
+
+                    // Update ETH balance
+                    const balance = await provider.getBalance(fullWalletAddress.eth);
+                    const ethBalance = ethers.utils.formatEther(balance);
+                    document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
+                } else if (network === 'bitcoin') {
+                    // Simulate Bitcoin transaction
+                    txHash = `btc_tx_${Date.now()}`;
+                    btcBalance -= parseFloat(amount);
+                    if (btcBalance < 0) {
+                        btcBalance += parseFloat(amount);
+                        throw new Error('Insufficient BTC balance');
+                    }
+                    addTransactionToHistory('Send', 'BTC', amount, address, 'Pending', txHash);
+                    setTimeout(() => updateTransactionStatus(txHash, 'Confirmed'), 2000); // Simulate confirmation
+                    document.getElementById('btc-amount').textContent = formatNumber(btcBalance, 2);
+                    alert(`Simulated Bitcoin transaction sent: ${txHash}`);
+                } else if (network === 'xrp') {
+                    // Simulate XRP transaction
+                    txHash = `xrp_tx_${Date.now()}`;
+                    xrpBalance -= parseFloat(amount);
+                    if (xrpBalance < 0) {
+                        xrpBalance += parseFloat(amount);
+                        throw new Error('Insufficient XRP balance');
+                    }
+                    addTransactionToHistory('Send', 'XRP', amount, address, 'Pending', txHash);
+                    setTimeout(() => updateTransactionStatus(txHash, 'Confirmed'), 2000); // Simulate confirmation
+                    document.getElementById('xrp-amount').textContent = formatNumber(xrpBalance, 2);
+                    alert(`Simulated XRP transaction sent: ${txHash}`);
+                }
             } catch (error) {
                 console.error('Transfer Error:', error);
                 alert('Transfer failed: ' + error.message);
@@ -665,18 +754,23 @@
             toggleModal('transfer-modal');
         }
 
-        // Stake ETH (simulated with Ethereum staking contract interaction)
+        // Stake ETH (simulated for Ethereum only)
         async function stakeFunds() {
             const asset = document.getElementById('stake-asset').value;
             const amount = document.getElementById('stake-amount').value;
 
-            if (!provider || !signer) {
-                alert('Please connect to Ethereum blockchain first.');
+            if (connectedChain !== 'Ethereum Mainnet') {
+                alert('Staking is only supported on Ethereum Mainnet.');
                 return;
             }
 
             if (asset !== 'ETH') {
                 alert('Only ETH staking is supported in this version.');
+                return;
+            }
+
+            if (!provider || !signer) {
+                alert('Please connect to Ethereum blockchain first.');
                 return;
             }
 
@@ -686,7 +780,6 @@
             }
 
             try {
-                // Simulated staking contract interaction (replace with real contract address and ABI)
                 const stakingContractAddress = '0x00000000219ab540356cBB839Cbe05303d7705Fa'; // Ethereum 2.0 deposit contract
                 const tx = await signer.sendTransaction({
                     to: stakingContractAddress,
@@ -704,7 +797,7 @@
                 localStorage.setItem('staked_ETH', stakedAmount);
 
                 // Update ETH balance
-                const balance = await provider.getBalance(fullWalletAddress);
+                const balance = await provider.getBalance(fullWalletAddress.eth);
                 const ethBalance = ethers.utils.formatEther(balance);
                 document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
             } catch (error) {
@@ -752,8 +845,6 @@
             });
         }
 
-        const btcAmountFixed = 15.68;
-        const xrpAmountFixed = 186046.51;
         const liabilities = 0;
         const initialInvestment = 30000;
 
@@ -803,17 +894,17 @@
                 if (ethPrice === 0 && previousPrices.eth) throw new Error('Invalid ETH price data');
                 if (xrpPrice === 0 && previousPrices.xrp) throw new Error('Invalid XRP price data');
 
-                const btcValue = btcAmountFixed * btcPrice;
+                const btcValue = btcBalance * btcPrice;
                 let ethValue = 0;
-                if (provider) {
-                    const balance = await provider.getBalance(fullWalletAddress);
+                if (provider && connectedChain === 'Ethereum Mainnet') {
+                    const balance = await provider.getBalance(fullWalletAddress.eth);
                     const ethBalance = ethers.utils.formatEther(balance);
                     ethValue = parseFloat(ethBalance) * ethPrice;
                     document.getElementById('eth-amount').textContent = formatNumber(parseFloat(ethBalance), 2);
                 } else {
                     ethValue = 343.23 * ethPrice; // Fallback to static value
                 }
-                const xrpValue = xrpAmountFixed * xrpPrice;
+                const xrpValue = xrpBalance * xrpPrice;
                 const total = btcValue + ethValue + xrpValue;
                 const netWorth = total - liabilities;
 
@@ -830,12 +921,12 @@
                 const currentHour = now.getHours();
 
                 if (lastUpdateDate !== currentDate && previousPrices.btc !== 0) {
-                    dailyPnl.btc.euro = btcAmountFixed * (btcPrice - previousPrices.btc);
-                    dailyPnl.btc.percent = (dailyPnl.btc.euro / (btcAmountFixed * previousPrices.btc)) * 100;
+                    dailyPnl.btc.euro = btcBalance * (btcPrice - previousPrices.btc);
+                    dailyPnl.btc.percent = (dailyPnl.btc.euro / (btcBalance * previousPrices.btc)) * 100;
                     dailyPnl.eth.euro = ethValue - (343.23 * previousPrices.eth);
                     dailyPnl.eth.percent = (dailyPnl.eth.euro / (343.23 * previousPrices.eth)) * 100;
-                    dailyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - previousPrices.xrp);
-                    dailyPnl.xrp.percent = (dailyPnl.xrp.euro / (xrpAmountFixed * previousPrices.xrp)) * 100;
+                    dailyPnl.xrp.euro = xrpBalance * (xrpPrice - previousPrices.xrp);
+                    dailyPnl.xrp.percent = (dailyPnl.xrp.euro / (xrpBalance * previousPrices.xrp)) * 100;
 
                     previousPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
                     localStorage.setItem('previousPrices', JSON.stringify(previousPrices));
@@ -845,12 +936,12 @@
 
                 if (currentHour !== parseInt(lastUpdateHour) || lastUpdateHour === -1) {
                     if (hourlyPrices.btc !== 0) {
-                        hourlyPnl.btc.euro = btcAmountFixed * (btcPrice - hourlyPrices.btc);
-                        hourlyPnl.btc.percent = (hourlyPnl.btc.euro / (btcAmountFixed * hourlyPrices.btc)) * 100;
+                        hourlyPnl.btc.euro = btcBalance * (btcPrice - hourlyPrices.btc);
+                        hourlyPnl.btc.percent = (hourlyPnl.btc.euro / (btcBalance * hourlyPrices.btc)) * 100;
                         hourlyPnl.eth.euro = ethValue - (343.23 * hourlyPrices.eth);
                         hourlyPnl.eth.percent = (hourlyPnl.eth.euro / (343.23 * hourlyPrices.eth)) * 100;
-                        hourlyPnl.xrp.euro = xrpAmountFixed * (xrpPrice - hourlyPrices.xrp);
-                        hourlyPnl.xrp.percent = (hourlyPnl.xrp.euro / (xrpAmountFixed * hourlyPrices.xrp)) * 100;
+                        hourlyPnl.xrp.euro = xrpBalance * (xrpPrice - hourlyPrices.xrp);
+                        hourlyPnl.xrp.percent = (hourlyPnl.xrp.euro / (xrpBalance * hourlyPrices.xrp)) * 100;
                     }
 
                     hourlyPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
@@ -860,7 +951,7 @@
                 }
 
                 document.getElementById('btc-price').textContent = formatNumber(btcPrice, 2);
-                document.getElementById('btc-amount').textContent = formatNumber(btcAmountFixed, 2);
+                document.getElementById('btc-amount').textContent = formatNumber(btcBalance, 2);
                 document.getElementById('btc-value').textContent = `€${formatNumber(btcValue, 2)}`;
                 document.getElementById('btc-pnl-24h-percent').textContent = `${dailyPnl.btc.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.btc.percent, 2)}%) `;
                 document.getElementById('btc-pnl-24h-percent').className = dailyPnl.btc.euro >= 0 ? 'gain' : 'loss';
@@ -883,7 +974,7 @@
                 document.getElementById('eth-pnl-1h-euro').className = hourlyPnl.eth.euro >= 0 ? 'gain' : 'loss';
 
                 document.getElementById('xrp-price').textContent = formatNumber(xrpPrice, 2);
-                document.getElementById('xrp-amount').textContent = formatNumber(xrpAmountFixed, 2);
+                document.getElementById('xrp-amount').textContent = formatNumber(xrpBalance, 2);
                 document.getElementById('xrp-value').textContent = `€${formatNumber(xrpValue, 2)}`;
                 document.getElementById('xrp-pnl-24h-percent').textContent = `${dailyPnl.xrp.percent >= 0 ? '(+' : '(-'}${formatNumber(dailyPnl.xrp.percent, 2)}%) `;
                 document.getElementById('xrp-pnl-24h-percent').className = dailyPnl.xrp.euro >= 0 ? 'gain' : 'loss';
@@ -922,9 +1013,9 @@
                 });
 
                 const performanceData = historicalPrices.btc.map((price, index) => {
-                    const btcHist = btcAmountFixed * (index === 8 ? btcPrice : historicalPrices.btc[index]);
-                    const ethHist = (provider ? parseFloat(document.getElementById('eth-amount').textContent) : 343.23) * (index === 8 ? ethPrice : historicalPrices.eth[index]);
-                    const xrpHist = xrpAmountFixed * (index === 8 ? xrpPrice : historicalPrices.xrp[index]);
+                    const btcHist = btcBalance * (index === 8 ? btcPrice : historicalPrices.btc[index]);
+                    const ethHist = (provider && connectedChain === 'Ethereum Mainnet' ? parseFloat(document.getElementById('eth-amount').textContent) : 343.23) * (index === 8 ? ethPrice : historicalPrices.eth[index]);
+                    const xrpHist = xrpBalance * (index === 8 ? xrpPrice : historicalPrices.xrp[index]);
                     return btcHist + ethHist + xrpHist;
                 });
 
@@ -966,8 +1057,8 @@
         }
 
         setInterval(() => {
-            document.getElementById('status-indicator').style.color = isUpdating ? '#e74c3c' : '#2ecc71';
-            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : `✔ Connected to ${connectedChain}`;
+            document.getElementById('status-indicator').style.color = isUpdating ? '#e74c3c' : connectedChain === 'None' ? '#e74c3c' : '#2ecc71';
+            document.getElementById('status-indicator').textContent = isUpdating ? '⏳ Updating...' : connectedChain === 'None' ? '❌ Disconnected' : `✔ Connected to ${connectedChain}`;
         }, 1000);
 
         setInterval(updatePortfolio, 300000);
@@ -979,14 +1070,16 @@
         });
 
         function copyAddress() {
-            navigator.clipboard.writeText(fullWalletAddress).then(() => {
-                alert('Address copied: ' + fullWalletAddress);
+            const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
+            navigator.clipboard.writeText(fullWalletAddress[network]).then(() => {
+                alert(`Address copied: ${fullWalletAddress[network]}`);
             });
         }
 
         function copyFullAddress() {
-            navigator.clipboard.writeText(fullWalletAddress).then(() => {
-                alert('Address copied: ' + fullWalletAddress);
+            const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
+            navigator.clipboard.writeText(fullWalletAddress[network]).then(() => {
+                alert(`Address copied: ${fullWalletAddress[network]}`);
             });
         }
 
@@ -1017,6 +1110,7 @@
                 document.getElementById('connected-chain').textContent = connectedChain;
                 document.getElementById('status-indicator').textContent = '❌ Disconnected';
                 document.getElementById('status-indicator').style.color = '#e74c3c';
+                document.getElementById('wallet-address').textContent = `${fullWalletAddress.eth.substring(0, 6)}...${fullWalletAddress.eth.substring(fullWalletAddress.eth.length - 4)}`;
                 alert('Logout successful!');
             }
         }
