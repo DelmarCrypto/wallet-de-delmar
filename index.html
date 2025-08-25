@@ -839,6 +839,60 @@
             });
         }
 
+        // Copy address with fallback
+        function copyAddress() {
+            const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
+            const address = fullWalletAddress[network];
+
+            // Try Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(address).then(() => {
+                    alert(`Address copied: ${address}`);
+                }).catch((err) => {
+                    console.error('Clipboard API failed:', err);
+                    fallbackCopyAddress(address);
+                });
+            } else {
+                fallbackCopyAddress(address);
+            }
+        }
+
+        // Copy full address with fallback
+        function copyFullAddress() {
+            const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
+            const address = fullWalletAddress[network];
+
+            // Try Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(address).then(() => {
+                    alert(`Address copied: ${address}`);
+                }).catch((err) => {
+                    console.error('Clipboard API failed:', err);
+                    fallbackCopyAddress(address);
+                });
+            } else {
+                fallbackCopyAddress(address);
+            }
+        }
+
+        // Fallback method for copying address
+        function fallbackCopyAddress(address) {
+            try {
+                const tempInput = document.createElement('input');
+                tempInput.style.position = 'absolute';
+                tempInput.style.left = '-9999px';
+                tempInput.value = address;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                alert(`Address copied: ${address}`);
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                alert(`Failed to copy address. Please copy manually: ${address}`);
+            }
+        }
+
         const liabilities = 0;
         const initialInvestment = 30000;
 
@@ -1070,20 +1124,6 @@
             document.body.classList.toggle('light-mode');
             document.getElementById('toggle-theme').innerHTML = `<i class="fas fa-adjust"></i> <span>${document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode'}</span>`;
         });
-
-        function copyAddress() {
-            const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
-            navigator.clipboard.writeText(fullWalletAddress[network]).then(() => {
-                alert(`Address copied: ${fullWalletAddress[network]}`);
-            });
-        }
-
-        function copyFullAddress() {
-            const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
-            navigator.clipboard.writeText(fullWalletAddress[network]).then(() => {
-                alert(`Address copied: ${fullWalletAddress[network]}`);
-            });
-        }
 
         function toggleModal(modalId, asset = '') {
             const modal = document.getElementById(modalId);
