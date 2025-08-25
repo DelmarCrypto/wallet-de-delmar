@@ -612,7 +612,7 @@
                     chainName = 'Bitcoin Mainnet';
                     break;
                 case 'ethereum':
-                    rpcUrl = 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'; // Replace with real Infura ID
+                    rpcUrl = 'https://cloudflare-eth.com'; // Public Ethereum RPC endpoint
                     chainName = 'Ethereum Mainnet';
                     break;
                 case 'xrp':
@@ -651,7 +651,7 @@
                     `${fullWalletAddress.eth.substring(0, 6)}...${fullWalletAddress.eth.substring(fullWalletAddress.eth.length - 4)}`;
                 alert(`Connected to ${chainName}!`);
                 toggleModal('connect-modal');
-                updatePortfolio(); // Update portfolio immediately after connecting
+                updatePortfolio();
             } catch (error) {
                 console.error('Connection Error:', error);
                 document.getElementById('status-indicator').textContent = '❌ Disconnected';
@@ -700,6 +700,11 @@
                         alert('Ethereum provider not initialized.');
                         return;
                     }
+                    const balance = await provider.getBalance(fullWalletAddress.eth);
+                    const ethBalance = ethers.utils.formatEther(balance);
+                    if (parseFloat(ethBalance) < parseFloat(amount)) {
+                        throw new Error('Insufficient ETH balance');
+                    }
                     const tx = await signer.sendTransaction({
                         to: address,
                         value: ethers.utils.parseEther(amount),
@@ -711,7 +716,7 @@
                     alert(`Transaction sent: ${txHash}`);
                     await tx.wait();
                     updateTransactionStatus(txHash, 'Confirmed');
-                    updatePortfolio(); // Update portfolio after transaction
+                    updatePortfolio();
                 } else if (network === 'bitcoin') {
                     txHash = `btc_tx_${Date.now()}`;
                     btcBalance -= parseFloat(amount);
@@ -770,6 +775,11 @@
             }
 
             try {
+                const balance = await provider.getBalance(fullWalletAddress.eth);
+                const ethBalance = ethers.utils.formatEther(balance);
+                if (parseFloat(ethBalance) < parseFloat(amount)) {
+                    throw new Error('Insufficient ETH balance');
+                }
                 const stakingContractAddress = '0x00000000219ab540356cBB839Cbe05303d7705Fa';
                 const tx = await signer.sendTransaction({
                     to: stakingContractAddress,
@@ -781,10 +791,9 @@
                 alert(`Staking transaction sent: ${tx.hash}`);
                 await tx.wait();
                 updateTransactionStatus(tx.hash, 'Confirmed');
-
                 const stakedAmount = parseFloat(localStorage.getItem('staked_ETH') || 0) + parseFloat(amount);
                 localStorage.setItem('staked_ETH', stakedAmount);
-                updatePortfolio(); // Update portfolio after staking
+                updatePortfolio();
             } catch (error) {
                 console.error('Staking Error:', error);
                 alert('Staking failed: ' + error.message);
@@ -884,10 +893,17 @@
                 let ethValue = ethBalance * ethPrice;
 
                 if (provider && connectedChain === 'Ethereum Mainnet') {
-                    const balance = await provider.getBalance(fullWalletAddress.eth);
-                    ethBalance = parseFloat(ethers.utils.formatEther(balance));
-                    ethValue = ethBalance * ethPrice;
-                    document.getElementById('eth-amount').textContent = formatNumber(ethBalance, 2);
+                    try {
+                        const balance = await provider.getBalance(fullWalletAddress.eth);
+                        ethBalance = parseFloat(ethers.utils.formatEther(balance));
+                        ethValue = ethBalance * ethPrice;
+                        document.getElementById('eth-amount').textContent = formatNumber(ethBalance, 2);
+                    } catch (error) {
+                        console.error('Ethereum balance fetch error:', error);
+                        ethBalance = 343.23; // Fallback to static value
+                        ethValue = ethBalance * ethPrice;
+                        document.getElementById('eth-amount').textContent = formatNumber(ethBalance, 2);
+                    }
                 }
 
                 const xrpValue = xrpBalance * xrpPrice;
@@ -908,11 +924,11 @@
 
                 if (lastUpdateDate !== currentDate && previousPrices.btc !== 0) {
                     dailyPnl.btc.euro = btcBalance * (btcPrice - previousPrices.btc);
-                    dailyPnl.btc.percent = (dailyPnl.btc.euro / (btcBalance * previousPrices.btc)) * 100;
+                    dailyPnl.btc.percent = previousPrices.btc ? (dailyPnl.btc.euro / (btcBalance * previousPrices.btc)) * 100 : 0;
                     dailyPnl.eth.euro = ethValue - (ethBalance * previousPrices.eth);
-                    dailyPnl.eth.percent = (dailyPnl.eth.euro / (ethBalance * previousPrices.eth)) * 100;
+                    dailyPnl.eth.percent = previousPrices.eth ? (dailyPnl.eth.euro / (ethBalance * previousPrices.eth)) * 100 : 0;
                     dailyPnl.xrp.euro = xrpBalance * (xrpPrice - previousPrices.xrp);
-                    dailyPnl.xrp.percent = (dailyPnl.xrp.euro / (xrpBalance * previousPrices.xrp)) * 100;
+                    dailyPnl.xrp.percent = previousPrices.xrp ? (dailyPnl.xrp.euro / (xrpBalance * previousPrices.xrp)) * 100 : 0;
 
                     previousPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
                     localStorage.setItem('previousPrices', JSON.stringify(previousPrices));
@@ -923,11 +939,11 @@
                 if (currentHour !== parseInt(lastUpdateHour) || lastUpdateHour === -1) {
                     if (hourlyPrices.btc !== 0) {
                         hourlyPnl.btc.euro = btcBalance * (btcPrice - hourlyPrices.btc);
-                        hourlyPnl.btc.percent = (hourlyPnl.btc.euro / (btcBalance * hourlyPrices.btc)) * 100;
+                        hourlyPnl.btc.percent = hourlyPrices.btc ? (hourlyPnl.btc.euro / (btcBalance * hourlyPrices.btc)) * 100 : 0;
                         hourlyPnl.eth.euro = ethValue - (ethBalance * hourlyPrices.eth);
-                        hourlyPnl.eth.percent = (hourlyPnl.eth.euro / (ethBalance * hourlyPrices.eth)) * 100;
+                        hourlyPnl.eth.percent = hourlyPrices.eth ? (hourlyPnl.eth.euro / (ethBalance * hourlyPrices.eth)) * 100 : 0;
                         hourlyPnl.xrp.euro = xrpBalance * (xrpPrice - hourlyPrices.xrp);
-                        hourlyPnl.xrp.percent = (hourlyPnl.xrp.euro / (xrpBalance * hourlyPrices.xrp)) * 100;
+                        hourlyPnl.xrp.percent = hourlyPrices.xrp ? (hourlyPnl.xrp.euro / (xrpBalance * hourlyPrices.xrp)) * 100 : 0;
                     }
 
                     hourlyPrices = { btc: btcPrice, eth: ethPrice, xrp: xrpPrice };
@@ -998,7 +1014,7 @@
                     }
                 });
 
-                const performanceData = historicalPrices.btc.map((index, i) => {
+                const performanceData = historicalPrices.btc.map((price, i) => {
                     const btcHist = btcBalance * (i === 8 ? btcPrice : historicalPrices.btc[i]);
                     const ethHist = ethBalance * (i === 8 ? ethPrice : historicalPrices.eth[i]);
                     const xrpHist = xrpBalance * (i === 8 ? xrpPrice : historicalPrices.xrp[i]);
@@ -1084,6 +1100,11 @@
                 if (asset) {
                     const select = modal.querySelector('select');
                     if (select) select.value = asset;
+                }
+                if (modalId === 'deposit-modal') {
+                    const network = connectedChain === 'Bitcoin Mainnet' ? 'btc' : connectedChain === 'Ethereum Mainnet' ? 'eth' : 'xrp';
+                    document.getElementById('deposit-address').value = 
+                        `${fullWalletAddress[network].substring(0, 6)}...${fullWalletAddress[network].substring(fullWalletAddress[network].length - 4)}`;
                 }
             }
         }
